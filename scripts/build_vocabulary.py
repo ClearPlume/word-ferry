@@ -4,8 +4,7 @@ from typing import Callable
 import sentencepiece as spm
 
 from scripts.d_model_calculator import d_model_calculator
-from src.word_ferry.core.constants import PAD_TOKEN_ID, PAD_TOKEN, VOCAB_SIZE, ZH_TOKEN, EN_TOKEN, FR_TOKEN, BOS_TOKEN, \
-    EOS_TOKEN
+from src.word_ferry.core.constants import PAD_TOKEN_ID, PAD_TOKEN, VOCAB_SIZE, ZH_TOKEN, EN_TOKEN, FR_TOKEN
 from src.word_ferry.path import get_data_dir
 
 data_dir = get_data_dir()
@@ -30,7 +29,7 @@ def train():
         max_sentence_length=8000,
         pad_id=PAD_TOKEN_ID,
         pad_piece=PAD_TOKEN,
-        user_defined_symbols=[BOS_TOKEN, EOS_TOKEN, ZH_TOKEN, EN_TOKEN, FR_TOKEN],
+        user_defined_symbols=[ZH_TOKEN, EN_TOKEN, FR_TOKEN],
         shuffle_input_sentence=True,
         character_coverage=0.9995,
         hard_vocab_limit=False,
