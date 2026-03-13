@@ -1,0 +1,14 @@
+.idea/workspace.xml
+.idea/misc.xml
+.idea/AICommit.xml
+
+.claude/
+.venv/
+
+__pycache__/
+
+data/corpus/
+data/samples/
+
+logs/
+models/

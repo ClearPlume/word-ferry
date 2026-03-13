@@ -1,0 +1,2 @@
+data/vocab/*.model filter=lfs diff=lfs merge=lfs -text
+data/vocab/*.vocab filter=lfs diff=lfs merge=lfs -text
