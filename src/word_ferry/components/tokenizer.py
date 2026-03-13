@@ -11,6 +11,9 @@ class Tokenizer:
     """词表处理器"""
     tokenizer: SentencePieceProcessor
 
+    bos_token_id: int = 1
+    eos_token_id: int = 2
+
     def __init__(self, vocab_file: Path = get_data_dir() / "vocab/word_ferry.model"):
         if os.path.exists(vocab_file):
             self.tokenizer = SentencePieceProcessor()
