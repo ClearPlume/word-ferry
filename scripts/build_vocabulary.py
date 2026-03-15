@@ -1,6 +1,8 @@
+import math
 import random
 from typing import Callable
 
+import numpy as np
 import sentencepiece as spm
 
 from scripts.d_model_calculator import d_model_calculator
@@ -139,10 +141,31 @@ def main():
 
     sample_size = min(10000, len(full_sample))
     overall_cases = random.sample(full_sample, k=min(len(full_sample), sample_size))
-    overall_avg = sum(len(tokenizer.Encode(s)) for s in overall_cases) / len(overall_cases)
-    print(f"overall_avg: {int(overall_avg)}")
+    lengths = [len(tokenizer.Encode(s)) for s in overall_cases]
 
-    total_token = len(full_sample) * int(overall_avg)
+    # 百分位分布
+    percentiles = [50, 75, 90, 95, 99, 99.5, 99.9]
+    values = np.percentile(lengths, percentiles)
+
+    print("\n长度分布:")
+    for p, v in zip(percentiles, values):
+        print(f"  P{p:>5}: {v:.0f}")
+
+    # 从 P95/P99 推导候选 max_len（向上取最近的 2 的幂）
+    candidates = set()
+    for p in [95, 99]:
+        v = np.percentile(lengths, p)
+        power = 2 ** math.ceil(math.log2(v))
+        candidates.add(power)
+        candidates.add(power // 2)  # 再紧凑一档也列出来
+
+    candidates = sorted(candidates)
+    print("\n候选 max_len 截断分析:")
+    for c in candidates:
+        truncated = (np.array(lengths) > c).mean()
+        print(f"  max_len={c:>5} → 截断 {truncated:.2%} 样本")
+
+    total_token = len(full_sample) * (sum(lengths) // len(lengths))
     print(f"total_token: {total_token}")
     d_model = d_model_calculator(tokenizer.vocab_size(), total_token, 10, 4, 4)
     print(f"推荐维度：{d_model}")
