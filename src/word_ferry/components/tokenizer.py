@@ -21,9 +21,9 @@ class Tokenizer:
         else:
             raise FileNotFoundError(f"Vocab file not found: {vocab_file}")
 
-    def encode(self, text: str) -> list[int]:
+    def encode(self, text: str, add_special_tokens: bool) -> list[int]:
         """编码文本为token ids"""
-        return self.tokenizer.Encode(text, add_bos=True, add_eos=True)
+        return self.tokenizer.Encode(text, add_bos=add_special_tokens, add_eos=add_special_tokens)
 
     def decode(self, token_ids: list[int]) -> str:
         """解码token ids为文本"""

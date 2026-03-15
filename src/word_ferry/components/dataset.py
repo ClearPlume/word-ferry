@@ -105,18 +105,19 @@ class WordFerryDataset(Dataset):
             target = _file.readline().decode("utf-8").strip()
 
         # [seq_len]
-        seq_encoded = self.tokenizer.encode(source)
+        seq_encoded = self.tokenizer.encode(source, False)
 
         # [min(max_len, seq_len)]
         if len(seq_encoded) > self.config.max_len:
             seq_encoded = seq_encoded[:self.config.max_len]
 
         # [tgt_len]
-        tgt_encoded = self.tokenizer.encode(target)
+        tgt_encoded = self.tokenizer.encode(target, True)
 
         # [min(max_len, tgt_len)]
         if len(tgt_encoded) > self.config.max_len:
             tgt_encoded = tgt_encoded[:self.config.max_len]
+            tgt_encoded[-1] = self.tokenizer.eos_token_id
 
         return TokenizedTransSample(torch.tensor(seq_encoded), torch.tensor(tgt_encoded))
 
