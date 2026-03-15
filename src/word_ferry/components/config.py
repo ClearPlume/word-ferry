@@ -48,7 +48,7 @@ class Config:
     batch_size: int
 
     min_delta: float = 1e-6
-    max_len: int = 2048
+    max_len: int = 256
     max_grad_norm: float = 1.0
     device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -78,11 +78,14 @@ class Config:
         return (
             f"{self.d_model}d×{self.n_head}h×{self.n_encoder_layers}L | "
             f"lr={self.learning_rate} | dropout={self.dropout}→{self.max_dropout} | "
-            f"batch={self.batch_size}"
+            f"batch={self.batch_size} | max_len={self.max_len} | "
+            f"ffn_ratio={self.ffn_ratio} | grad_norm={self.max_grad_norm}\n"
+            f"    ⚠ 缓存敏感: batch_size={self.batch_size}, max_len={self.max_len} "
+            f"— 若已修改，请确认缓存已清除"
         )
 
     @staticmethod
-    def default(learning_rate=8e-5, dropout=0.2, max_dropout=0.4, batch_size=32):
+    def default(learning_rate=8e-5, dropout=0.2, max_dropout=0.4, batch_size=25):
         return Config(
             d_model=128,
             n_head=2,
