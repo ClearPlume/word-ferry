@@ -99,14 +99,10 @@ class WordFerryDataset(Dataset):
 
     # 样本文件结构为：source\n<zh>目标\n\n源\n<en>target
     def __getitem__(self, idx) -> TokenizedTransSample:
-        _file = self.sample_file.open("rb")
-        _file.seek(self.offsets[idx])
-
-        source = _file.readline().decode("utf-8").strip()
-        target = _file.readline().decode("utf-8").strip()
-        _file.close()
-
-        print(f"idx: {idx}, source: {source}, target: {target}")
+        with open(self.sample_file, "rb") as _file:
+            _file.seek(self.offsets[idx])
+            source = _file.readline().decode("utf-8").strip()
+            target = _file.readline().decode("utf-8").strip()
 
         # [seq_len]
         seq_encoded = self.tokenizer.encode(source)
