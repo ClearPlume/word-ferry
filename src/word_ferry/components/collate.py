@@ -1,6 +1,7 @@
 import torch
 from torch.nn import functional as torch_f
 
+from src.word_ferry.components.config import Config
 from src.word_ferry.components.dataset import TokenizedTransSample, BatchedTransSample
 from src.word_ferry.core.constants import PAD_TOKEN_ID
 
@@ -60,9 +61,9 @@ def collate_fn(batch: list[TokenizedTransSample]) -> BatchedTransSample:
         tgt_attention_mask.append(mask)
 
     return BatchedTransSample(
-        torch.stack(padded_src),
-        torch.stack(src_attention_mask),
-        torch.stack(padded_tgt_in),
-        torch.stack(padded_tgt_out),
-        torch.stack(tgt_attention_mask),
+        torch.stack(padded_src).to(Config.device),
+        torch.stack(src_attention_mask).to(Config.device),
+        torch.stack(padded_tgt_in).to(Config.device),
+        torch.stack(padded_tgt_out).to(Config.device),
+        torch.stack(tgt_attention_mask).to(Config.device),
     )
