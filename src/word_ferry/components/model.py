@@ -4,20 +4,27 @@ import torch
 from torch import Tensor
 from torch.nn import Module, Embedding, TransformerEncoder, TransformerDecoder, TransformerEncoderLayer, \
     TransformerDecoderLayer, Linear
+from torch.nn.functional import softmax
 
 from src.word_ferry.components.config import Config
+from src.word_ferry.components.tokenizer import Tokenizer
 from src.word_ferry.core.constants import PAD_TOKEN_ID
 from src.word_ferry.path import get_models_dir
 
 
 class Model(Module):
+    tokenizer: Tokenizer
+    config: Config
     embedding: Embedding
     pos_encoding: Embedding
     encoder: TransformerEncoder
     decoder: TransformerDecoder
 
-    def __init__(self, vocab_size: int, config: Config):
+    def __init__(self, tokenizer: Tokenizer, config: Config):
         super().__init__()
+
+        self.tokenizer = tokenizer
+        self.config = config
 
         # 词嵌入，将词表中的每个token都映射到d_model维度的向量空间，初始值为随机浮点值
         # [[e0_0, e0_1, e0_2, ..., e0_{d_model-1}]  <- tokens[v0]
@@ -26,7 +33,7 @@ class Model(Module):
         #                     ...
         #  [eN_0, eN_1, eN_2, ..., eN_{d_model-1}]] <- tokens[v_{vocab_size-1}]
         # [vocab_size, d_model]
-        self.embedding = Embedding(vocab_size, config.d_model, PAD_TOKEN_ID)
+        self.embedding = Embedding(tokenizer.vocab_size, config.d_model, PAD_TOKEN_ID)
         # 位置编码
         # [max_len, d_model], batch维广播自动补齐
         self.pos_encoding = Embedding(config.max_len, config.d_model)
@@ -54,7 +61,7 @@ class Model(Module):
         self.decoder = TransformerDecoder(decoder_layer, config.n_decoder_layers)
 
         # 输出投影层
-        self.output_projection = Linear(config.d_model, vocab_size)
+        self.output_projection = Linear(config.d_model, tokenizer.vocab_size)
 
         # 词嵌入和输出投影共享权重
         self.output_projection.weight = self.embedding.weight
@@ -77,6 +84,10 @@ class Model(Module):
         :param tgt_attention_mask: 目标序列attention_mask
         :return: 词汇表上的原始分数 [batch_size, tgt_len, vocab_size]
         """
+        memory, src_kpm = self.encode(src, src_attention_mask)
+        return self.decode(tgt, memory, src_kpm, tgt_attention_mask)
+
+    def encode(self, src: Tensor, src_attention_mask: Tensor):
         src_attention_mask = src_attention_mask == 0
 
         # 编码
@@ -87,10 +98,18 @@ class Model(Module):
         src_embedded = src_embedded + src_pe
 
         memory = self.encoder(src_embedded, src_key_padding_mask=src_attention_mask)
+        return memory, src_attention_mask
 
-        # 解码
-        if tgt is None:
-            return memory
+    def decode(
+            self,
+            tgt: Tensor,
+            memory: Tensor,
+            src_attention_mask: Tensor,
+            tgt_attention_mask: Tensor = None,
+            last_only: bool = False,
+    ) -> Tensor:
+        if tgt_attention_mask is None:
+            tgt_attention_mask = torch.ones(tgt.shape, device=tgt.device)
 
         tgt_attention_mask = tgt_attention_mask == 0
 
@@ -111,8 +130,55 @@ class Model(Module):
             memory_key_padding_mask=src_attention_mask,
         )
 
+        if last_only:
+            decoder_output = decoder_output[:, -1:, :]
+
         # 输出投影
         return self.output_projection(decoder_output)
+
+    @torch.no_grad()
+    def generate(
+            self,
+            src: Tensor,
+            src_mask: Tensor,
+            lang_tokens: Tensor,
+            do_sample: bool = False,
+            temperature: float = 1.0,
+    ) -> Tensor:
+        """一次完整推理"""
+        device = src.device
+        batch_size = src.size(0)
+
+        # encoder 只跑一次
+        memory, src_key_padding_mask = self.encode(src, src_mask)
+
+        # 初始化解码序列 [zh/en/fr]
+        generated = torch.full(
+            (batch_size, self.config.max_len + 1),  # +1 给 lang token
+            PAD_TOKEN_ID, dtype=torch.long, device=device,
+        )
+        generated[:, 0] = lang_tokens
+        finished = torch.zeros(batch_size, dtype=torch.bool, device=device)
+
+        length = 1  # 已经有 lang token
+        for t in range(1, self.config.max_len + 1):
+            logits = self.decode(generated[:, :t], memory, src_key_padding_mask, last_only=True, )
+            next_logits = logits.squeeze(1)  # [b, 48000]
+
+            if do_sample:
+                next_tokens = torch.multinomial(softmax(next_logits / temperature), 1, ).squeeze(1)
+            else:
+                next_tokens = next_logits.argmax(dim=-1)
+
+            next_tokens[finished] = PAD_TOKEN_ID
+            generated[:, t] = next_tokens
+            finished |= (next_tokens == self.tokenizer.eos_token_id)
+
+            length = t + 1
+            if finished.all():
+                break
+
+        return generated[:, :length]
 
     @property
     def param_num(self) -> str:
