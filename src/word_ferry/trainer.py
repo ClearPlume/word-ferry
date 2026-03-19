@@ -364,7 +364,6 @@ class Trainer:
             # BLEU测试语句收集量
             bleu_progress.set_postfix({"samples": f"{len(hypotheses)}/{len(bleu_data) * self.config.batch_size}"})
 
-        self.logger.info("BLEU calculating...")
         return avg_loss, sacrebleu.corpus_bleu(hypotheses, [references]).score
 
     def _predict(self, batch: BatchedTransSample) -> tuple[Tensor, Tensor, Tensor]:
