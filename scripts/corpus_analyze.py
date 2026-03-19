@@ -1,4 +1,4 @@
-from src.word_ferry.components.config import CorpusType
+from word_ferry.components.config import CorpusType
 
 
 def corpus_analyze(corpus_type: CorpusType):

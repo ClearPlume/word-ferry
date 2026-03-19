@@ -4,7 +4,7 @@ from pathlib import Path
 
 from sentencepiece import SentencePieceProcessor
 
-from src.word_ferry.path import get_data_dir
+from word_ferry.path import get_data_dir
 
 
 class Tokenizer:

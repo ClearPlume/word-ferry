@@ -6,10 +6,10 @@ from torch.nn import Module, Embedding, TransformerEncoder, TransformerDecoder, 
     TransformerDecoderLayer, Linear
 from torch.nn.functional import softmax
 
-from src.word_ferry.components.config import Config
-from src.word_ferry.components.tokenizer import Tokenizer
-from src.word_ferry.core.constants import PAD_TOKEN_ID
-from src.word_ferry.path import get_models_dir
+from word_ferry.components.config import Config
+from word_ferry.components.tokenizer import Tokenizer
+from word_ferry.core.constants import PAD_TOKEN_ID
+from word_ferry.path import get_models_dir
 
 
 class Model(Module):

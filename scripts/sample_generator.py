@@ -1,7 +1,7 @@
 import random
 import shutil
 
-from src.word_ferry.path import get_data_dir
+from word_ferry.path import get_data_dir
 
 
 def sample_generator():

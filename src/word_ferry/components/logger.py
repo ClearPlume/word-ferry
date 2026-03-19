@@ -1,6 +1,6 @@
 import logging
 
-from src.word_ferry.path import get_logs_dir
+from word_ferry.path import get_logs_dir
 
 
 def setup_logger(name: str, type_: str, level: int = logging.INFO) -> logging.Logger:

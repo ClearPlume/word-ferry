@@ -13,15 +13,15 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from src.word_ferry.components.config import Config, ResumeStrategy
-from src.word_ferry.components.dataset import BatchedTransSample
-from src.word_ferry.components.dropout_scheduler import DropoutScheduler
-from src.word_ferry.components.logger import setup_logger
-from src.word_ferry.components.model import Model
-from src.word_ferry.components.tokenizer import Tokenizer
-from src.word_ferry.core.constants import PAD_TOKEN_ID
-from src.word_ferry.core.tdr_guard import TDRGuard
-from src.word_ferry.path import get_logs_dir, get_models_dir
+from word_ferry.components.config import Config, ResumeStrategy
+from word_ferry.components.dataset import BatchedTransSample
+from word_ferry.components.dropout_scheduler import DropoutScheduler
+from word_ferry.components.logger import setup_logger
+from word_ferry.components.model import Model
+from word_ferry.components.tokenizer import Tokenizer
+from word_ferry.core.constants import PAD_TOKEN_ID
+from word_ferry.core.tdr_guard import TDRGuard
+from word_ferry.path import get_logs_dir, get_models_dir
 
 
 class Trainer:

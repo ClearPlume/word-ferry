@@ -4,8 +4,8 @@ from typing import Iterator, cast
 
 from torch.utils.data import Subset
 
-from src.word_ferry.components.dataset import TokenizedTransSample, WordFerryDataset
-from src.word_ferry.path import get_data_dir
+from word_ferry.components.dataset import TokenizedTransSample, WordFerryDataset
+from word_ferry.path import get_data_dir
 
 
 class LengthGroupSampler:

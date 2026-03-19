@@ -6,9 +6,9 @@ import torch
 from torch import Tensor, Generator
 from torch.utils.data import Dataset, Subset, random_split
 
-from src.word_ferry.components.config import Config
-from src.word_ferry.components.tokenizer import Tokenizer
-from src.word_ferry.core.constants import VAL_RATIO, TEST_RATIO, RANDOM_SEED
+from word_ferry.components.config import Config
+from word_ferry.components.tokenizer import Tokenizer
+from word_ferry.core.constants import VAL_RATIO, TEST_RATIO, RANDOM_SEED
 
 
 @dataclass

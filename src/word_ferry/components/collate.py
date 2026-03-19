@@ -1,8 +1,8 @@
 import torch
 from torch.nn import functional as torch_f
 
-from src.word_ferry.components.dataset import TokenizedTransSample, BatchedTransSample
-from src.word_ferry.core.constants import PAD_TOKEN_ID
+from word_ferry.components.dataset import TokenizedTransSample, BatchedTransSample
+from word_ferry.core.constants import PAD_TOKEN_ID
 
 
 def collate_fn(batch: list[TokenizedTransSample]) -> BatchedTransSample:

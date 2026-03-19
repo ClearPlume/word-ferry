@@ -6,8 +6,8 @@ import numpy as np
 import sentencepiece as spm
 
 from scripts.d_model_calculator import d_model_calculator
-from src.word_ferry.core.constants import PAD_TOKEN_ID, PAD_TOKEN, VOCAB_SIZE, ZH_TOKEN, EN_TOKEN, FR_TOKEN
-from src.word_ferry.path import get_data_dir
+from word_ferry.core.constants import PAD_TOKEN_ID, PAD_TOKEN, VOCAB_SIZE, ZH_TOKEN, EN_TOKEN, FR_TOKEN
+from word_ferry.path import get_data_dir
 
 data_dir = get_data_dir()
 (data_dir / "vocab").mkdir(parents=True, exist_ok=True)

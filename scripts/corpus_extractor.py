@@ -1,9 +1,9 @@
 import random
 import shutil
 
-from src.word_ferry.components.config import CorpusType
-from src.word_ferry.core.constants import SAMPLES_PER_DIRECTION
-from src.word_ferry.path import get_data_dir
+from word_ferry.components.config import CorpusType
+from word_ferry.core.constants import SAMPLES_PER_DIRECTION
+from word_ferry.path import get_data_dir
 
 
 def corpus_extractor(corpus_type: CorpusType):
