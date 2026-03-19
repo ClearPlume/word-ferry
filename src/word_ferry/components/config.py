@@ -65,7 +65,7 @@ class Config:
     @property
     def train_str(self):
         return (
-            f"lr={self.learning_rate} | dropout={self.dropout}→{self.max_dropout} | "
+            f"lr={self.learning_rate:.2e} | dropout={self.dropout}→{self.max_dropout} | "
             f"batch={self.batch_size} | max_len={self.max_len} | grad_norm={self.max_grad_norm}"
         )
 
