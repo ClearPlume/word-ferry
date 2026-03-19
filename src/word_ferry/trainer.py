@@ -153,10 +153,13 @@ class Trainer:
         self.logger.info("=" * 60)
         self.logger.info("🚀 开始训练")
         self.logger.info(f"    Epochs: {self.start_epoch} -> {self.epochs}")
-        self.logger.info(f"    模型架构: {self.config}")
+        self.logger.info(f"    模型架构: {self.config.arch_str}")
+        self.logger.info(f"    训练参数: {self.config.train_str}")
+        self.logger.info(f"    ⚠ 缓存敏感: batch_size={self.config.batch_size}, max_len={self.config.max_len}")
+        self.logger.info(f"        — 若已修改，请确认缓存已清除")
         self.logger.info(f"    参数规模: {self.model.param_num}")
         self.logger.info(f"    样本规模: 180万")
-        self.logger.info(f"    当前学习率: {self.lr_scheduler.get_last_lr()[0]:.2e}")
+        self.logger.info(f"    当前学习率: {self.lr_scheduler.get_last_lr()[0]}")
         self.logger.info(f"    当前Dropout: {self.dp_scheduler.current_dropout}")
         self.logger.info(f"    最佳分数: {self.best_score}")
         self.logger.info("=" * 60)
@@ -387,7 +390,7 @@ class Trainer:
         """判断并更新最佳记录和早停计数"""
 
         improvement = score - self.best_score
-        if improvement > self.config.min_delta:
+        if improvement > self.config.min_improvement:
             if self.early_stop_count > 0:
                 self.logger.info(f"✔️ 早停计数重设 ({epoch})")
                 self.summary.add_text("EarlyStop", f"✔️ 早停计数重设 ({epoch})", epoch)

@@ -46,46 +46,31 @@ class Config:
     dropout: float
     max_dropout: float
     batch_size: int
+    max_len: int
 
-    min_delta: float = 1e-6
-    max_len: int = 256
+    min_improvement: float = 1e-6
     max_grad_norm: float = 1.0
     device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def __init__(
-            self,
-            d_model: int,
-            n_head: int,
-            n_encoder_layers: int,
-            ffn_ratio: int,
-            n_decoder_layers: int,
-            learning_rate: float,
-            dropout: float,
-            max_dropout: float,
-            batch_size: int,
-    ):
-        self.d_model = d_model
-        self.n_head = n_head
-        self.n_encoder_layers = n_encoder_layers
-        self.ffn_ratio = ffn_ratio
-        self.n_decoder_layers = n_decoder_layers
-        self.learning_rate = learning_rate
-        self.dropout = dropout
-        self.max_dropout = max_dropout
-        self.batch_size = batch_size
+    @property
+    def arch_str(self):
+        layers_parts = []
+        if self.n_encoder_layers > 0:
+            layers_parts.append(f"enc={self.n_encoder_layers}")
+        if self.n_decoder_layers > 0:
+            layers_parts.append(f"dec={self.n_decoder_layers}")
 
-    def __str__(self):
+        return f"dim={self.d_model} | head={self.n_head} | {' | '.join(layers_parts)} | ffn={self.ffn_ratio}"
+
+    @property
+    def train_str(self):
         return (
-            f"{self.d_model}d×{self.n_head}h×{self.n_encoder_layers}L | "
             f"lr={self.learning_rate} | dropout={self.dropout}→{self.max_dropout} | "
-            f"batch={self.batch_size} | max_len={self.max_len} | "
-            f"ffn_ratio={self.ffn_ratio} | grad_norm={self.max_grad_norm}\n"
-            f"    ⚠ 缓存敏感: batch_size={self.batch_size}, max_len={self.max_len} "
-            f"— 若已修改，请确认缓存已清除"
+            f"batch={self.batch_size} | max_len={self.max_len} | grad_norm={self.max_grad_norm}"
         )
 
     @staticmethod
-    def default(learning_rate=8e-5, dropout=0.2, max_dropout=0.4, batch_size=25):
+    def default(learning_rate=8e-5, dropout=0.2, max_dropout=0.4, batch_size=25, max_len=128):
         return Config(
             d_model=128,
             n_head=2,
@@ -95,5 +80,6 @@ class Config:
             learning_rate=learning_rate,
             dropout=dropout,
             max_dropout=max_dropout,
-            batch_size=batch_size
+            batch_size=batch_size,
+            max_len=max_len,
         )
