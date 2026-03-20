@@ -15,7 +15,7 @@ from word_ferry.trainer import Trainer
 
 def main():
     data_dir = get_data_dir()
-    config = Config.default(learning_rate=5e-4, batch_size=20)
+    config = Config.default(learning_rate=5e-4, batch_size=40, max_len=256)
     tokenizer = Tokenizer()
 
     dataset = WordFerryDataset(data_dir / "samples/samples.txt", tokenizer, config)
