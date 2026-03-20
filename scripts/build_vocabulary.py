@@ -167,7 +167,7 @@ def main():
 
     total_token = len(full_sample) * (sum(lengths) // len(lengths))
     print(f"total_token: {total_token}")
-    d_model = d_model_calculator(tokenizer.vocab_size(), total_token, 10, 4, 4)
+    d_model = d_model_calculator(tokenizer.vocab_size(), total_token, 5, 6, 6)
     print(f"推荐维度：{d_model}")
 
 

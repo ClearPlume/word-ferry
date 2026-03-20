@@ -72,11 +72,11 @@ class Config:
     @staticmethod
     def default(learning_rate=8e-5, dropout=0.2, max_dropout=0.4, batch_size=25, max_len=128):
         return Config(
-            d_model=128,
-            n_head=2,
-            n_encoder_layers=4,
+            d_model=192,
+            n_head=3,
+            n_encoder_layers=6,
             ffn_ratio=4,
-            n_decoder_layers=4,
+            n_decoder_layers=6,
             learning_rate=learning_rate,
             dropout=dropout,
             max_dropout=max_dropout,
