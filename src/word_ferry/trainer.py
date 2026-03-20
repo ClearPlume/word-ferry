@@ -20,7 +20,6 @@ from word_ferry.components.logger import setup_logger
 from word_ferry.components.model import Model
 from word_ferry.components.tokenizer import Tokenizer
 from word_ferry.core.constants import PAD_TOKEN_ID
-from word_ferry.core.tdr_guard import TDRGuard
 from word_ferry.path import get_logs_dir, get_models_dir
 
 
@@ -47,7 +46,6 @@ class Trainer:
     best_epoch: int
     checkpoint_dir: Path
     logger: Logger
-    tdr_guard: TDRGuard
 
     def __init__(
             self,
@@ -91,7 +89,6 @@ class Trainer:
             self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
         self.logger = setup_logger(train_name, "train")
-        self.tdr_guard = TDRGuard()
 
     def load_checkpoint(
             self,
@@ -278,8 +275,6 @@ class Trainer:
             self.optimizer.step()
             self.optimizer.zero_grad()
 
-            self.tdr_guard.sync_if_needed()
-
             progress.set_postfix({
                 "loss": f"{loss.item():.8f}",
                 "lr": f"{self.lr_scheduler.get_last_lr()[0]:.2e}",
@@ -306,8 +301,6 @@ class Trainer:
         for idx, batch in enumerate(loss_progress):
             loss, src, target = self._predict(batch)
             total_loss += loss.item()
-
-            self.tdr_guard.sync_if_needed()
 
             loss_progress.set_postfix({
                 "loss": f"{loss.item():.8f}",
@@ -358,8 +351,6 @@ class Trainer:
                 token_ids = seq.tolist()[1:]
                 token_ids = token_ids[:token_ids.index(self.tokenizer.eos_token_id)]
                 references.append(self.tokenizer.decode(token_ids))
-
-            self.tdr_guard.sync_if_needed()
 
             # BLEU测试语句收集量
             bleu_progress.set_postfix({"samples": f"{len(hypotheses)}/{len(bleu_data) * self.config.batch_size}"})
