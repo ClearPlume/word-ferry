@@ -3,6 +3,8 @@ from enum import Enum
 
 import torch
 
+from word_ferry.core.constants import D_MODEL, N_HEAD, N_ENCODER_LAYERS, FFN_RATIO, N_DECODER_LAYERS
+
 
 class CorpusType(Enum):
     # 1500W
@@ -72,11 +74,11 @@ class Config:
     @staticmethod
     def default(learning_rate=8e-5, dropout=0.2, max_dropout=0.4, batch_size=25, max_len=128):
         return Config(
-            d_model=192,
-            n_head=3,
-            n_encoder_layers=6,
-            ffn_ratio=4,
-            n_decoder_layers=6,
+            d_model=D_MODEL,
+            n_head=N_HEAD,
+            n_encoder_layers=N_ENCODER_LAYERS,
+            ffn_ratio=FFN_RATIO,
+            n_decoder_layers=N_DECODER_LAYERS,
             learning_rate=learning_rate,
             dropout=dropout,
             max_dropout=max_dropout,

@@ -6,7 +6,8 @@ import numpy as np
 import sentencepiece as spm
 
 from scripts.d_model_calculator import d_model_calculator
-from word_ferry.core.constants import PAD_TOKEN_ID, PAD_TOKEN, VOCAB_SIZE, ZH_TOKEN, EN_TOKEN, FR_TOKEN
+from word_ferry.core.constants import PAD_TOKEN_ID, PAD_TOKEN, VOCAB_SIZE, ZH_TOKEN, EN_TOKEN, FR_TOKEN, \
+    TOKEN_PER_PARAM, N_ENCODER_LAYERS, N_DECODER_LAYERS
 from word_ferry.path import get_data_dir
 
 data_dir = get_data_dir()
@@ -167,7 +168,13 @@ def main():
 
     total_token = len(full_sample) * (sum(lengths) // len(lengths))
     print(f"total_token: {total_token}")
-    d_model = d_model_calculator(tokenizer.vocab_size(), total_token, 5, 6, 6)
+    d_model = d_model_calculator(
+        tokenizer.vocab_size(),
+        total_token,
+        TOKEN_PER_PARAM,
+        N_ENCODER_LAYERS,
+        N_DECODER_LAYERS,
+    )
     print(f"推荐维度：{d_model}")
 
 
