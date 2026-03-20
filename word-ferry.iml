@@ -9,6 +9,7 @@
       <excludeFolder url="file://$MODULE_DIR$/data/samples" />
       <excludeFolder url="file://$MODULE_DIR$/logs" />
       <excludeFolder url="file://$MODULE_DIR$/models" />
+      <excludeFolder url="file://$MODULE_DIR$/src/word_ferry.egg-info" />
     </content>
     <orderEntry type="jdk" jdkName="uv (word-ferry)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
