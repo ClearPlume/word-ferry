@@ -3,7 +3,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 
 from word_ferry.components.collate import collate_fn
-from word_ferry.components.config import Config, ResumeStrategy
+from word_ferry.components.config import Config
 from word_ferry.components.dataset import WordFerryDataset
 from word_ferry.components.dropout_scheduler import DropoutScheduler
 from word_ferry.components.model import Model
@@ -15,7 +15,13 @@ from word_ferry.trainer import Trainer
 
 def main():
     data_dir = get_data_dir()
-    config = Config.default(learning_rate=5e-4, batch_size=40, max_len=256)
+    config = Config.default(
+        learning_rate=5e-4,
+        dropout=0.2,
+        max_dropout=0.4,
+        batch_size=40,
+        max_len=256,
+    )
     tokenizer = Tokenizer()
 
     dataset = WordFerryDataset(data_dir / "samples/samples.txt", tokenizer, config)

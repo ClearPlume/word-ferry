@@ -72,7 +72,7 @@ class Config:
         )
 
     @staticmethod
-    def default(learning_rate=8e-5, dropout=0.2, max_dropout=0.4, batch_size=25, max_len=128):
+    def default(learning_rate: float, dropout: float, max_dropout: float, batch_size: int, max_len: int):
         return Config(
             d_model=D_MODEL,
             n_head=N_HEAD,
