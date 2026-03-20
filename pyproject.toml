@@ -2,7 +2,7 @@
 name = "word-ferry"
 version = "0.1.0"
 description = "跨语言翻译：将一种语言的意义摆渡到另一种语言"
-requires-python = ">=3.13"
+requires-python = "==3.13.*"
 dependencies = [
     "torch==2.10.0",
     "tqdm==4.67.3",
