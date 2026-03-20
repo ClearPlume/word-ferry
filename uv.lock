@@ -664,6 +664,7 @@ source = { editable = "." }
 dependencies = [
     { name = "sacrebleu" },
     { name = "sentencepiece" },
+    { name = "setuptools" },
     { name = "tensorboard" },
     { name = "torch" },
     { name = "tqdm" },
@@ -673,6 +674,7 @@ dependencies = [
 requires-dist = [
     { name = "sacrebleu", specifier = ">=2.6.0" },
     { name = "sentencepiece", specifier = "==0.2.1" },
+    { name = "setuptools", specifier = "==82.*" },
     { name = "tensorboard", specifier = "==2.20.0" },
     { name = "torch", specifier = "==2.10.0", index = "https://download.pytorch.org/whl/cu130" },
     { name = "tqdm", specifier = "==4.67.3" },
