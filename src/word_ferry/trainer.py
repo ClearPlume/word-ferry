@@ -152,7 +152,7 @@ class Trainer:
         self.logger.info(f"    Epochs: {self.start_epoch} -> {self.epochs}")
         self.logger.info(f"    模型架构: {self.config.arch_str}")
         self.logger.info(f"    训练参数: {self.config.train_str}")
-        self.logger.info(f"    ⚠ 缓存敏感: batch_size={self.config.batch_size}, max_len={self.config.max_len}")
+        self.logger.info(f"    ⚠ 缓存敏感: batch_size={self.config.batch_size}")
         self.logger.info(f"        — 若已修改，请确认缓存已清除")
         self.logger.info(f"    参数规模: {self.model.param_num}")
         self.logger.info(f"    样本规模: 180万")

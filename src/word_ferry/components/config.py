@@ -63,13 +63,13 @@ class Config:
         if self.n_decoder_layers > 0:
             layers_parts.append(f"dec={self.n_decoder_layers}")
 
-        return f"dim={self.d_model} | head={self.n_head} | {' | '.join(layers_parts)} | ffn={self.ffn_ratio}"
+        return f"dim={self.d_model} | head={self.n_head} | {' | '.join(layers_parts)} | ffn={self.ffn_ratio} | max_len={self.max_len}"
 
     @property
     def train_str(self):
         return (
             f"lr={self.learning_rate:.2e} | dropout={self.dropout}→{self.max_dropout} (factor={self.dropout_factor}) | "
-            f"batch={self.batch_size} | max_len={self.max_len} | grad_norm={self.max_grad_norm}"
+            f"batch={self.batch_size} | grad_norm={self.max_grad_norm}"
         )
 
     @staticmethod
