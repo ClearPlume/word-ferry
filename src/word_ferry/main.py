@@ -18,6 +18,7 @@ def main():
     config = Config.default(
         learning_rate=5e-4,
         dropout=0.2,
+        dropout_factor=0.1,
         max_dropout=0.4,
         batch_size=40,
         max_len=256,
@@ -57,7 +58,7 @@ def main():
     dp_scheduler = DropoutScheduler(
         model.named_modules(),
         config.dropout,
-        0.1,
+        config.dropout_factor,
         config.max_dropout,
         2,
     )
