@@ -45,9 +45,11 @@ class Config:
     ffn_ratio: int
     n_decoder_layers: int
     learning_rate: float
-    dropout: float
+    initial_dropout: float
     dropout_factor: float
     max_dropout: float
+    dropout_window: int
+    dropout_cooldown: int
     batch_size: int
     max_len: int
 
@@ -68,16 +70,18 @@ class Config:
     @property
     def train_str(self):
         return (
-            f"lr={self.learning_rate:.2e} | dropout={self.dropout}→{self.max_dropout} (factor={self.dropout_factor}) | "
+            f"lr={self.learning_rate:.2e} | dropout={self.initial_dropout}→{self.max_dropout} (factor={self.dropout_factor}) | "
             f"batch={self.batch_size} | grad_norm={self.max_grad_norm}"
         )
 
     @staticmethod
     def default(
             learning_rate: float,
-            dropout: float,
+            initial_dropout: float,
             dropout_factor: float,
             max_dropout: float,
+            dropout_window: int,
+            dropout_cooldown: int,
             batch_size: int,
             max_len: int,
     ):
@@ -88,9 +92,11 @@ class Config:
             ffn_ratio=FFN_RATIO,
             n_decoder_layers=N_DECODER_LAYERS,
             learning_rate=learning_rate,
-            dropout=dropout,
+            initial_dropout=initial_dropout,
             dropout_factor=dropout_factor,
             max_dropout=max_dropout,
+            dropout_window=dropout_window,
+            dropout_cooldown=dropout_cooldown,
             batch_size=batch_size,
             max_len=max_len,
         )

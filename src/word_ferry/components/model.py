@@ -43,7 +43,7 @@ class Model(Module):
             d_model=config.d_model,
             nhead=config.n_head,
             dim_feedforward=config.d_model * config.ffn_ratio,
-            dropout=config.dropout,
+            dropout=config.initial_dropout,
             batch_first=True,
             norm_first=True,
         )
@@ -54,7 +54,7 @@ class Model(Module):
             d_model=config.d_model,
             nhead=config.n_head,
             dim_feedforward=config.d_model * config.ffn_ratio,
-            dropout=config.dropout,
+            dropout=config.initial_dropout,
             batch_first=True,
             norm_first=True,
         )

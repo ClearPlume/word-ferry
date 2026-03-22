@@ -2,6 +2,8 @@ from typing import Iterator, Any
 
 from torch.nn import Module, Dropout
 
+from word_ferry.components.config import Config
+
 
 class DropoutScheduler:
     """
@@ -22,36 +24,23 @@ class DropoutScheduler:
     train_losses: list[float] = []
     val_losses: list[float] = []
 
-    def __init__(
-            self,
-            modules: Iterator[tuple[str, Module]],
-            initial_dropout: float,
-            factor: float,
-            max_dropout: float = 0.5,
-            window: int = 3,
-            cooldown: int = 3,
-    ):
-        """
-        :param window: 检测最近多少个epoch的loss状态以判定过拟合状态
-        :param cooldown: 调整dropout后多少个 epoch 不再调整（冷却期）
-        """
-
+    def __init__(self, modules: Iterator[tuple[str, Module]], config: Config):
         self.dropouts = {}
 
         for name, module in modules:
             if isinstance(module, Dropout):
                 self.dropouts[name] = module
 
-        self.initial_dropout = initial_dropout
-        self.factor = factor
-        self.max_dropout = max_dropout
-        self.window = window
-        self.cooldown = cooldown
+        self.initial_dropout = config.initial_dropout
+        self.factor = config.dropout_factor
+        self.max_dropout = config.max_dropout
+        self.window = config.dropout_window
+        self.cooldown = config.dropout_cooldown
 
-        self.current_dropout = initial_dropout
+        self.current_dropout = config.initial_dropout
 
         # 设置所有dropout模块的初始值
-        self._adjust_dropout(initial_dropout)
+        self._adjust_dropout(config.initial_dropout)
 
     def step(self, train_loss: float, val_loss: float) -> float:
         self.train_losses.append(train_loss)
