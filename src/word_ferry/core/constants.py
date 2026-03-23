@@ -15,7 +15,7 @@ PAD_TOKEN_ID = 3
 PAD_TOKEN = "<pad>"
 ZH_TOKEN = "<zh>"
 EN_TOKEN = "<en>"
-FR_TOKEN = "<fr"
+FR_TOKEN = "<fr>"
 
 # 数据生成配置
 SAMPLES_PER_DIRECTION = 300000  # 每个翻译方向的样本数
