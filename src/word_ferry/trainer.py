@@ -43,6 +43,7 @@ class Trainer:
     criterion: CrossEntropyLoss
     summary: SummaryWriter
     best_score: float
+    best_loss: float
     best_epoch: int
     checkpoint_dir: Path
     logger: Logger
@@ -82,6 +83,7 @@ class Trainer:
         self.criterion = CrossEntropyLoss(ignore_index=PAD_TOKEN_ID, label_smoothing=0.05)
         self.summary = SummaryWriter(str(get_logs_dir() / train_name))
         self.best_score = 0
+        self.best_loss = 0
         self.best_epoch = 1
         self.checkpoint_dir = get_models_dir() / f"checkpoint/{train_name}"
 
@@ -145,6 +147,7 @@ class Trainer:
 
         if not reset_training_state:
             self.best_score = checkpoint["best_score"]
+            self.best_loss = 2.46105577
             self.best_epoch = checkpoint["best_epoch"]
             self.early_stop_count = checkpoint["early_stop_count"]
             self.start_epoch = checkpoint["start_epoch"]
@@ -162,6 +165,7 @@ class Trainer:
         self.logger.info(f"    当前学习率: {self.lr_scheduler.get_last_lr()[0]:.2e}")
         self.logger.info(f"    当前Dropout: {self.dp_scheduler.current_dropout}")
         self.logger.info(f"    最佳分数: {self.best_score}")
+        self.logger.info(f"    最佳Loss: {self.best_loss}")
         self.logger.info("=" * 60)
 
         total_start = time.perf_counter()
@@ -214,6 +218,7 @@ class Trainer:
 
             if self._is_best(val_loss, epoch):
                 score = self._calc_score(epoch, score_data)
+                self.best_score = score
 
                 self.summary.add_scalar("Training/BLEU", score, epoch)
                 self.logger.info(f"✨ 新的最佳模型 (Epoch {self.best_epoch}, Score={score:.8f})")
@@ -229,6 +234,7 @@ class Trainer:
                         "lr_scheduler_state": self.lr_scheduler.state_dict(),
                         "dp_scheduler_state": self.dp_scheduler.state_dict(),
                         "best_score": self.best_score,
+                        "best_loss": self.best_loss,
                         "best_epoch": self.best_epoch,
                         "early_stop_count": self.early_stop_count,
                         "start_epoch": epoch + 1,
@@ -243,10 +249,10 @@ class Trainer:
 
             if self.early_stop_count >= self.early_stop_patience:
                 self.logger.info(f"🚨 早停触发: 连续 {self.early_stop_patience} 个epoch无提升")
-                self.logger.info(f"    最佳模型: Epoch {self.best_epoch}, Score={self.best_score:.8f}")
+                self.logger.info(f"    最佳模型: Epoch {self.best_epoch}, Score={self.best_score:.8f}, Loss={self.best_loss:.8f}")
                 self.summary.add_text(
                     "EarlyStop",
-                    f"🚨 早停触发: 连续 {self.early_stop_patience} 个epoch无提升\n    最佳模型: Epoch {self.best_epoch}, Score={self.best_score:.8f}",
+                    f"🚨 早停触发: 连续 {self.early_stop_patience} 个epoch无提升\n    最佳模型: Epoch {self.best_epoch}, Score={self.best_score:.8f}, Loss={self.best_loss:.8f}",
                     epoch,
                 )
                 break
@@ -259,7 +265,7 @@ class Trainer:
         minutes, seconds = divmod(rem, 60)
 
         self.logger.info(f"✅ 训练完成，总时长: {hours}h {minutes}m {seconds}s")
-        self.logger.info(f"    最佳分数: {self.best_score:.8f} (Epoch {self.best_epoch})")
+        self.logger.info(f"    最佳分数: {self.best_score:.8f} (Epoch {self.best_epoch} / {self.best_loss:.8f})")
 
     def train_epoch(self, epoch: int) -> float:
         self.model.train()
@@ -380,16 +386,16 @@ class Trainer:
 
         return sacrebleu.corpus_bleu(hypotheses, [references]).score
 
-    def _is_best(self, score: float, epoch: int) -> bool:
+    def _is_best(self, val_loss: float, epoch: int) -> bool:
         """判断并更新最佳记录和早停计数"""
 
-        improvement = score - self.best_score
+        improvement = val_loss - self.best_loss
         if improvement > self.config.min_improvement:
             if self.early_stop_count > 0:
                 self.logger.info(f"✔️ 早停计数重设 ({epoch})")
                 self.summary.add_text("EarlyStop", f"✔️ 早停计数重设 ({epoch})", epoch)
 
-            self.best_score = score
+            self.best_loss = val_loss
             self.best_epoch = epoch
             self.early_stop_count = 0
 
