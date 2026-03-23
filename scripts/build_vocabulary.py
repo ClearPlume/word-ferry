@@ -34,7 +34,7 @@ def train():
         pad_piece=PAD_TOKEN,
         user_defined_symbols=[ZH_TOKEN, EN_TOKEN, FR_TOKEN],
         shuffle_input_sentence=True,
-        character_coverage=0.9995,
+        character_coverage=1,
         hard_vocab_limit=False,
         normalization_rule_name="identity",
         remove_extra_whitespaces=False,
