@@ -53,7 +53,7 @@ class Config:
     batch_size: int
     max_len: int
 
-    min_improvement: float = 1e-6
+    improvement_threshold: float = 5e-3
     max_grad_norm: float = 1.0
     device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
