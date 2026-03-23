@@ -166,6 +166,16 @@ def main():
         truncated = (np.array(lengths) > c).mean()
         print(f"  max_len={c:>5} → 截断 {truncated:.2%} 样本")
 
+    print(f"{'=' * 60}")
+
+    test_chars = [chr(c) for c in range(0x4E00, 0x9FFF + 1)]  # CJK统一汉字基本区，20992字，远超日常需要
+    unk_chars = [c for c in test_chars if tokenizer.PieceToId(c) == tokenizer.unk_id()]
+    print(f"UNK汉字: {len(unk_chars)}/{len(test_chars)}")
+    if unk_chars:
+        print(f"示例: {''.join(random.sample(unk_chars, 200))}")
+
+    print(f"{'=' * 60}")
+
     total_token = len(full_sample) * (sum(lengths) // len(lengths))
     print(f"total_token: {total_token}")
     d_model = d_model_calculator(
