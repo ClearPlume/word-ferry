@@ -391,7 +391,7 @@ class Trainer:
     def _is_best(self, val_loss: float, epoch: int) -> bool:
         """判断并更新最佳记录和早停计数"""
 
-        improvement = val_loss - self.best_loss
+        improvement = self.best_loss - val_loss
         if improvement / self.best_loss > self.config.improvement_threshold:
             if self.early_stop_count > 0:
                 self.logger.info(f"✔️ 早停计数重设 ({epoch})")
