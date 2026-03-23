@@ -221,10 +221,12 @@ class Trainer:
                 self.best_score = score
 
                 self.summary.add_scalar("Training/BLEU", score, epoch)
-                self.logger.info(f"✨ 新的最佳模型 (Epoch {self.best_epoch}, Score={score:.8f})")
+                self.logger.info(
+                    f"✨ 新的最佳模型 (Epoch {self.best_epoch}, Score={score:.8f}, Loss={self.best_loss:.8f})"
+                )
                 self.summary.add_text(
                     "BestModel",
-                    f"✨ 新的最佳模型 (Epoch {self.best_epoch}, Score={score:.8f})",
+                    f"✨ 新的最佳模型 (Epoch {self.best_epoch}, Score={score:.8f}, Loss={self.best_loss:.8f})",
                     epoch,
                 )
                 torch.save(
