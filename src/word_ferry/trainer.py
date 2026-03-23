@@ -140,6 +140,9 @@ class Trainer:
 
             self.logger.info(f"✗ 优化器、LR调度器使用新配置，仅恢复部分dropout状态")
 
+        self.logger.info(f"· Train loss: {checkpoint["dp_scheduler_state"]["train_losses"][-1]:.8f}")
+        self.logger.info(f"· Val loss: {checkpoint["dp_scheduler_state"]["val_losses"][-1]:.8f}")
+
         if not reset_training_state:
             self.best_score = checkpoint["best_score"]
             self.best_epoch = checkpoint["best_epoch"]
