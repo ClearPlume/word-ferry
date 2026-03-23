@@ -147,7 +147,7 @@ class Trainer:
 
         if not reset_training_state:
             self.best_score = checkpoint["best_score"]
-            self.best_loss = 2.46105577
+            self.best_loss = checkpoint["best_loss"]
             self.best_epoch = checkpoint["best_epoch"]
             self.early_stop_count = checkpoint["early_stop_count"]
             self.start_epoch = checkpoint["start_epoch"]
