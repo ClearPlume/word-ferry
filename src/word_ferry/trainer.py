@@ -1,7 +1,7 @@
-import math
 import time
 from logging import Logger
 from pathlib import Path
+from sys import float_info
 
 import sacrebleu
 import torch
@@ -84,7 +84,7 @@ class Trainer:
         self.criterion = CrossEntropyLoss(ignore_index=PAD_TOKEN_ID, label_smoothing=0.05)
         self.summary = SummaryWriter(str(get_logs_dir() / train_name))
         self.best_score = 0
-        self.best_loss = math.inf
+        self.best_loss = float_info.max
         self.best_epoch = 1
         self.checkpoint_dir = get_models_dir() / f"checkpoint/{train_name}"
 
@@ -252,7 +252,9 @@ class Trainer:
 
             if self.early_stop_count >= self.early_stop_patience:
                 self.logger.info(f"🚨 早停触发: 连续 {self.early_stop_patience} 个epoch无提升")
-                self.logger.info(f"    最佳模型: Epoch {self.best_epoch}, Score={self.best_score:.8f}, Loss={self.best_loss:.8f}")
+                self.logger.info(
+                    f"    最佳模型: Epoch {self.best_epoch}, Score={self.best_score:.8f}, Loss={self.best_loss:.8f}"
+                )
                 self.summary.add_text(
                     "EarlyStop",
                     f"🚨 早停触发: 连续 {self.early_stop_patience} 个epoch无提升\n    最佳模型: Epoch {self.best_epoch}, Score={self.best_score:.8f}, Loss={self.best_loss:.8f}",
