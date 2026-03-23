@@ -1,3 +1,4 @@
+import math
 import time
 from logging import Logger
 from pathlib import Path
@@ -83,7 +84,7 @@ class Trainer:
         self.criterion = CrossEntropyLoss(ignore_index=PAD_TOKEN_ID, label_smoothing=0.05)
         self.summary = SummaryWriter(str(get_logs_dir() / train_name))
         self.best_score = 0
-        self.best_loss = 0
+        self.best_loss = math.inf
         self.best_epoch = 1
         self.checkpoint_dir = get_models_dir() / f"checkpoint/{train_name}"
 
