@@ -3,7 +3,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 
 from word_ferry.components.collate import collate_fn
-from word_ferry.components.config import Config
+from word_ferry.components.config import Config, ResumeStrategy
 from word_ferry.components.dataset import WordFerryDataset
 from word_ferry.components.dropout_scheduler import DropoutScheduler
 from word_ferry.components.model import Model
@@ -70,7 +70,7 @@ def main():
         train_name="2026-03-22",
     )
 
-    # trainer.load_checkpoint("2026-03-20", ResumeStrategy.EXCLUDE_REGULARIZATION)
+    trainer.load_checkpoint("2026-03-22", ResumeStrategy.ALL_COMPONENTS)
 
     trainer.train()
 
