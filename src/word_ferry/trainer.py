@@ -167,7 +167,7 @@ class Trainer:
             epoch_start = time.perf_counter()
 
             train_loss = self.train_epoch(epoch)
-            val_loss, score = self.validate_epoch(epoch)
+            val_loss, score_data = self.validate_epoch(epoch)
 
             epoch_time = time.perf_counter() - epoch_start
             minutes, seconds = divmod(int(epoch_time), 60)
@@ -175,7 +175,6 @@ class Trainer:
             self.logger.info(f"⏭️ Epoch {epoch}/{self.epochs}")
             self.logger.info(f"    Train loss: {train_loss:.8f}")
             self.logger.info(f"    Val loss: {val_loss:.8f}")
-            self.logger.info(f"    BLEU: {score:.8f}")
             self.logger.info(f"    LR: {self.lr_scheduler.get_last_lr()[0]:.2e}")
             self.logger.info(f"    DP: {self.dp_scheduler.current_dropout}")
             self.logger.info(f"    Time: {minutes}m {seconds}s")
@@ -207,11 +206,13 @@ class Trainer:
                 "train": train_loss,
                 "val": val_loss,
             }, epoch)
-            self.summary.add_scalar("Training/BLEU", score, epoch)
             self.summary.add_scalar("Hyperparams/LR", self.lr_scheduler.get_last_lr()[0], epoch)
             self.summary.add_scalar("Hyperparams/DP", self.dp_scheduler.current_dropout, epoch)
 
-            if self._is_best(score, epoch):
+            if self._is_best(val_loss, epoch):
+                score = self._calc_score(epoch, score_data)
+
+                self.summary.add_scalar("Training/BLEU", score, epoch)
                 self.logger.info(f"✨ 新的最佳模型 (Epoch {self.best_epoch}, Score={score:.8f})")
                 self.summary.add_text(
                     "BestModel",
@@ -290,13 +291,10 @@ class Trainer:
         return avg_loss
 
     @torch.no_grad()
-    def validate_epoch(self, epoch: int) -> tuple[float, float]:
+    def validate_epoch(self, epoch: int) -> tuple[float, list[BatchedTransSample]]:
         self.model.eval()
         total_loss = 0.0
-        loss_progress: tqdm[BatchedTransSample] = tqdm(
-            self.val_loader,
-            f"Loss calculating, epoch {epoch}/{self.epochs} [Val]",
-        )
+        loss_progress: tqdm[BatchedTransSample] = tqdm(self.val_loader, f"Epoch {epoch}/{self.epochs} [Val]")
 
         for idx, batch in enumerate(loss_progress):
             loss, src, target = self._predict(batch)
@@ -321,9 +319,31 @@ class Trainer:
                 break
             bleu_data.append(batch)
 
+        return avg_loss, bleu_data
+
+    def _predict(self, batch: BatchedTransSample) -> tuple[Tensor, Tensor, Tensor]:
+        """
+        模型预测
+        
+        :return tuple[loss, src, target]
+        """
+
+        src = batch.src.to(self.config.device)
+        src_attention_masks = batch.src_attention_mask.to(self.config.device)
+        tgt = batch.tgt_in.to(self.config.device)
+        tgt_attention_masks = batch.tgt_attention_mask.to(self.config.device)
+
+        target = batch.tgt_out.to(self.config.device)
+
+        logits: Tensor = self.model(src, src_attention_masks, tgt, tgt_attention_masks)
+
+        loss = self.criterion(logits.view(-1, self.tokenizer.vocab_size), target.view(-1))
+        return loss, src, target
+
+    def _calc_score(self, epoch: int, score_data: list[BatchedTransSample]) -> float:
         bleu_progress: tqdm[BatchedTransSample] = tqdm(
-            bleu_data,
-            f"BLEU forwarding, epoch {epoch}/{self.epochs} [Val]",
+            score_data,
+            f"BLEU forwarding, epoch {epoch}/{self.epochs} [Best]",
         )
 
         hypotheses = []
@@ -353,28 +373,9 @@ class Trainer:
                 references.append(self.tokenizer.decode(token_ids))
 
             # BLEU测试语句收集量
-            bleu_progress.set_postfix({"samples": f"{len(hypotheses)}/{len(bleu_data) * self.config.batch_size}"})
+            bleu_progress.set_postfix({"samples": f"{len(hypotheses)}/{len(score_data) * self.config.batch_size}"})
 
-        return avg_loss, sacrebleu.corpus_bleu(hypotheses, [references]).score
-
-    def _predict(self, batch: BatchedTransSample) -> tuple[Tensor, Tensor, Tensor]:
-        """
-        模型预测
-        
-        :return tuple[loss, src, target]
-        """
-
-        src = batch.src.to(self.config.device)
-        src_attention_masks = batch.src_attention_mask.to(self.config.device)
-        tgt = batch.tgt_in.to(self.config.device)
-        tgt_attention_masks = batch.tgt_attention_mask.to(self.config.device)
-
-        target = batch.tgt_out.to(self.config.device)
-
-        logits: Tensor = self.model(src, src_attention_masks, tgt, tgt_attention_masks)
-
-        loss = self.criterion(logits.view(-1, self.tokenizer.vocab_size), target.view(-1))
-        return loss, src, target
+        return sacrebleu.corpus_bleu(hypotheses, [references]).score
 
     def _is_best(self, score: float, epoch: int) -> bool:
         """判断并更新最佳记录和早停计数"""
