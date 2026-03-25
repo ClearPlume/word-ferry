@@ -66,10 +66,10 @@ def main():
         optimizer=optimizer,
         lr_scheduler=lr_scheduler,
         dp_scheduler=dp_scheduler,
-        train_name="2026-03-23",
+        train_name="2026-03-25",
     )
 
-    # trainer.load_checkpoint("2026-03-22", ResumeStrategy.ALL_COMPONENTS)
+    # trainer.load_checkpoint("2026-03-25", ResumeStrategy.ALL_COMPONENTS)
 
     trainer.train()
 

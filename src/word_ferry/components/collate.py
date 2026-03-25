@@ -39,10 +39,11 @@ def collate_fn(batch: list[TokenizedTransSample]) -> BatchedTransSample:
     tgt_attention_mask = []
 
     for tgt in tgt_list:
-        # 去掉最后一个token作为解码器输入 [BOS] + tokens[:-1]
-        tgt_in = tgt[:-1]
-        # 去掉第一个token作为目标输出 tokens + [EOS]
-        tgt_out = tgt[1:]
+        # 去掉最后一个token <[EOS]> 作为解码器输入 [BOS] + tokens[:-1]
+        # 移除 <[BOS]> ，本项目中，使用语言标签同步作为事实上的 <[BOS]>
+        tgt_in = tgt[1:-1]
+        # 去掉第一个token <[BOS]> 和第二个token <[语言标签]> 作为目标输出 tokens + [EOS]
+        tgt_out = tgt[2:]
 
         # Padding
         in_padding_len = tgt_max_len - len(tgt_in)
