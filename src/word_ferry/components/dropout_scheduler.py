@@ -3,6 +3,7 @@ from typing import Iterator, Any
 from torch.nn import Module, Dropout
 
 from word_ferry.components.config import Config
+from word_ferry.core.utils import is_trend_significant
 
 
 class DropoutScheduler:
@@ -17,6 +18,7 @@ class DropoutScheduler:
     factor: float
     max_dropout: float
     window: int
+    significance: float
     cooldown: int
 
     current_dropout: float
@@ -35,6 +37,7 @@ class DropoutScheduler:
         self.factor = config.dropout_factor
         self.max_dropout = config.max_dropout
         self.window = config.dropout_window
+        self.significance = config.dropout_significance
         self.cooldown = config.dropout_cooldown
 
         self.current_dropout = config.initial_dropout
@@ -53,11 +56,11 @@ class DropoutScheduler:
         if self.epochs_since_adjustment < self.cooldown:
             return self.current_dropout
 
-        train_losses = self.train_losses[-self.window:]
-        val_losses = self.val_losses[-self.window:]
+        train_window = self.train_losses[-self.window:]
+        val_window = self.val_losses[-self.window:]
 
-        train_decreasing = all(train_losses[i] > train_losses[i + 1] for i in range(self.window - 1))
-        val_increasing = all(val_losses[i] < val_losses[i + 1] for i in range(self.window - 1))
+        train_decreasing = is_trend_significant(train_window, False, self.significance)
+        val_increasing = is_trend_significant(val_window, True, self.significance)
 
         if train_decreasing and val_increasing:
             new_dropout = min(self.current_dropout * (1 + self.factor), self.max_dropout)

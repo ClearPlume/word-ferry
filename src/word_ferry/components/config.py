@@ -48,12 +48,13 @@ class Config:
     initial_dropout: float
     dropout_factor: float
     max_dropout: float
-    dropout_window: int
     dropout_cooldown: int
     batch_size: int
     max_len: int
 
     improvement_threshold: float = 5e-3
+    dropout_window = 5
+    dropout_significance = 2
     max_grad_norm: float = 1.0
     device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -80,7 +81,6 @@ class Config:
             initial_dropout: float,
             dropout_factor: float,
             max_dropout: float,
-            dropout_window: int,
             dropout_cooldown: int,
             batch_size: int,
             max_len: int,
@@ -95,7 +95,6 @@ class Config:
             initial_dropout=initial_dropout,
             dropout_factor=dropout_factor,
             max_dropout=max_dropout,
-            dropout_window=dropout_window,
             dropout_cooldown=dropout_cooldown,
             batch_size=batch_size,
             max_len=max_len,

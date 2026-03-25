@@ -20,7 +20,6 @@ def main():
         initial_dropout=0.2,
         dropout_factor=0.1,
         max_dropout=0.4,
-        dropout_window=3,
         dropout_cooldown=3,
         batch_size=40,
         max_len=256,
