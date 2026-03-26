@@ -40,7 +40,6 @@ class Trainer:
     early_stop_patience: int
     train_name: str
     start_epoch: int
-    epochs: int
     criterion: CrossEntropyLoss
     summary: SummaryWriter
     best_score: float
@@ -61,7 +60,6 @@ class Trainer:
             dp_scheduler: DropoutScheduler,
             train_name: str,
             early_stop_patience: int = 6,
-            epochs: int = 50,
     ):
         """
         :param train_name: 训练名称，将作为日志路径、模型保存路径的一部分
@@ -80,7 +78,6 @@ class Trainer:
         self.early_stop_patience = early_stop_patience
         self.train_name = train_name
         self.start_epoch = 1
-        self.epochs = epochs
         self.criterion = CrossEntropyLoss(ignore_index=PAD_TOKEN_ID, label_smoothing=0.05)
         self.summary = SummaryWriter(str(get_logs_dir() / train_name))
         self.best_score = 0
@@ -156,7 +153,7 @@ class Trainer:
     def train(self):
         self.logger.info("=" * 60)
         self.logger.info("🚀 开始训练")
-        self.logger.info(f"    Epochs: {self.start_epoch} -> {self.epochs}")
+        self.logger.info(f"    Epochs: {self.start_epoch}")
         self.logger.info(f"    模型架构: {self.config.arch_str}")
         self.logger.info(f"    训练参数: {self.config.train_str}")
         self.logger.info(f"    ⚠ 缓存敏感: batch_size={self.config.batch_size}")
@@ -171,7 +168,8 @@ class Trainer:
 
         total_start = time.perf_counter()
 
-        for epoch in range(self.start_epoch, self.epochs + 1):
+        # 不直接决定训多少轮，让数据和模型容量决定，让loss和评估分数说话
+        for epoch in range(self.start_epoch, 2147493647):
             epoch_start = time.perf_counter()
 
             train_loss = self.train_epoch(epoch)
@@ -180,7 +178,7 @@ class Trainer:
             epoch_time = time.perf_counter() - epoch_start
             minutes, seconds = divmod(int(epoch_time), 60)
 
-            self.logger.info(f"⏭️ Epoch {epoch}/{self.epochs}")
+            self.logger.info(f"⏭️ Epoch {epoch}")
             self.logger.info(f"    Train loss: {train_loss:.8f}")
             self.logger.info(f"    Val loss: {val_loss:.8f}")
             self.logger.info(f"    LR: {self.lr_scheduler.get_last_lr()[0]:.2e}")
@@ -275,7 +273,7 @@ class Trainer:
     def train_epoch(self, epoch: int) -> float:
         self.model.train()
         total_loss = 0.0
-        progress: tqdm[BatchedTransSample] = tqdm(self.train_loader, f"Epoch {epoch}/{self.epochs} [Train]")
+        progress: tqdm[BatchedTransSample] = tqdm(self.train_loader, f"Epoch {epoch} [Train]")
 
         for idx, batch in enumerate(progress):
             loss, _, _ = self._predict(batch)
@@ -308,7 +306,7 @@ class Trainer:
     def validate_epoch(self, epoch: int) -> tuple[float, list[BatchedTransSample]]:
         self.model.eval()
         total_loss = 0.0
-        loss_progress: tqdm[BatchedTransSample] = tqdm(self.val_loader, f"Epoch {epoch}/{self.epochs} [Val]")
+        loss_progress: tqdm[BatchedTransSample] = tqdm(self.val_loader, f"Epoch {epoch} [Val]")
 
         for idx, batch in enumerate(loss_progress):
             loss, src, target = self._predict(batch)
@@ -357,7 +355,7 @@ class Trainer:
     def _calc_score(self, epoch: int, score_data: list[BatchedTransSample]) -> float:
         bleu_progress: tqdm[BatchedTransSample] = tqdm(
             score_data,
-            f"BLEU forwarding, epoch {epoch}/{self.epochs} [Best]",
+            f"BLEU forwarding, epoch {epoch} [Best]",
         )
 
         hypotheses = []
