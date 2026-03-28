@@ -184,11 +184,17 @@ class Model(Module):
     def param_num(self) -> str:
         return f"{sum(p.numel() for p in self.parameters()) / 1e6:.1f}M"
 
-    def load(self, checkpoint_name: str):
-        checkpoint_dir = get_models_dir() / f"checkpoint/{checkpoint_name}/checkpoint_{checkpoint_name}_best.pt"
+    def load(self, checkpoint_name: str, weight_only: bool = False, model_name: str = None):
+        if weight_only:
+            checkpoint_dir = get_models_dir() / f"{model_name}.pt"
+        else:
+            checkpoint_dir = get_models_dir() / f"checkpoint/{checkpoint_name}/checkpoint_{checkpoint_name}_best.pt"
 
         if not checkpoint_dir.exists():
             raise FileNotFoundError(f"Checkpoint not found: {checkpoint_name}")
 
         checkpoint = torch.load(checkpoint_dir)
-        self.load_state_dict(checkpoint["model_state"])
+        if weight_only:
+            self.load_state_dict(checkpoint)
+        else:
+            self.load_state_dict(checkpoint["model_state"])

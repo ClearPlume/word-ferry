@@ -150,6 +150,17 @@ class Trainer:
             self.early_stop_count = checkpoint["early_stop_count"]
             self.start_epoch = checkpoint["start_epoch"]
 
+    def save_checkpoint(self, checkpoint_name: str, model_name: str):
+        checkpoint_path = self.checkpoint_dir / f"checkpoint_{checkpoint_name}_best.pt"
+
+        if not checkpoint_path.exists():
+            raise FileNotFoundError(f"Checkpoint file {checkpoint_path} not found")
+
+        checkpoint = torch.load(checkpoint_path, map_location=self.config.device)
+        model_path = get_models_dir() / f"{model_name}.pt"
+
+        torch.save(checkpoint["model_state"], model_path)
+
     def train(self):
         self.logger.info("=" * 60)
         self.logger.info("🚀 开始训练")
