@@ -85,6 +85,10 @@ class Model(Module):
         :return: 词汇表上的原始分数 [batch_size, tgt_len, vocab_size]
         """
         memory, src_kpm = self.encode(src, src_attention_mask)
+
+        if tgt is None:
+            return memory
+
         return self.decode(tgt, memory, src_kpm, tgt_attention_mask)
 
     def encode(self, src: Tensor, src_attention_mask: Tensor):
