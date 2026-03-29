@@ -2,10 +2,10 @@ from typing import Optional
 
 import torch
 from torch import Tensor
-from torch.nn import Module, Embedding, TransformerEncoder, TransformerDecoder, TransformerEncoderLayer, \
-    TransformerDecoderLayer, Linear
+from torch.nn import Module, Embedding, TransformerEncoder, TransformerEncoderLayer, TransformerDecoderLayer, Linear
 from torch.nn.functional import softmax
 
+from word_ferry.components.cached_decoder import CachedDecoder
 from word_ferry.components.config import Config
 from word_ferry.components.tokenizer import Tokenizer
 from word_ferry.core.constants import PAD_TOKEN_ID
@@ -18,7 +18,7 @@ class Model(Module):
     embedding: Embedding
     pos_encoding: Embedding
     encoder: TransformerEncoder
-    decoder: TransformerDecoder
+    decoder: CachedDecoder
 
     def __init__(self, tokenizer: Tokenizer, config: Config):
         super().__init__()
@@ -58,7 +58,7 @@ class Model(Module):
             batch_first=True,
             norm_first=True,
         )
-        self.decoder = TransformerDecoder(decoder_layer, config.n_decoder_layers)
+        self.decoder = CachedDecoder(decoder_layer, config.n_decoder_layers)
 
         # 输出投影层
         self.output_projection = Linear(config.d_model, tokenizer.vocab_size)
