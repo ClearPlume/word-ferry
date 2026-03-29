@@ -662,6 +662,7 @@ name = "word-ferry"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "numpy" },
     { name = "sacrebleu" },
     { name = "sentencepiece" },
     { name = "tensorboard" },
@@ -671,6 +672,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "numpy", specifier = ">=2.4.2" },
     { name = "sacrebleu", specifier = ">=2.6.0" },
     { name = "sentencepiece", specifier = "==0.2.1" },
     { name = "tensorboard", specifier = "==2.20.0" },
