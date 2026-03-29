@@ -98,7 +98,7 @@ class WordFerryDataset(Dataset):
         return len(self.offsets)
 
     # 样本文件结构为：source\n<zh>目标\n\n源\n<en>target
-    def __getitem__(self, idx) -> TokenizedTransSample:
+    def __getitem__(self, idx: int) -> TokenizedTransSample:
         with open(self.sample_file, "rb") as _file:
             _file.seek(self.offsets[idx])
             source = _file.readline().decode("utf-8").strip()
