@@ -7,6 +7,8 @@ from torch.nn import TransformerDecoderLayer, ModuleList, Module
 class CachedDecoder(Module):
     """支持KV Cached的Decoder"""
 
+    layers: ModuleList
+
     def __init__(self, decoder_layer: TransformerDecoderLayer, num_layers: int):
         super().__init__()
         self.layers = ModuleList([copy.deepcopy(decoder_layer) for _ in range(num_layers)])
