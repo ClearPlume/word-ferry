@@ -1,7 +1,7 @@
 import torch
 from torch.nn import functional as torch_f
 
-from word_ferry.components.dataset import TokenizedTransSample, BatchedTransSample
+from word_ferry.components.train.dataset import TokenizedTransSample, BatchedTransSample
 from word_ferry.core.constants import PAD_TOKEN_ID
 
 
@@ -14,8 +14,8 @@ def collate_fn(batch: list[TokenizedTransSample]) -> BatchedTransSample:
     """
 
     # 分离源序列与目标序列
-    src_list = [batch.input for batch in batch]
-    tgt_list = [batch.target for batch in batch]
+    src_list = [batch_src.input for batch_src in batch]
+    tgt_list = [batch_tgt.target for batch_tgt in batch]
 
     # Padding源序列
     src_max_len = max(len(src) for src in src_list)

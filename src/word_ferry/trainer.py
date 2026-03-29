@@ -15,8 +15,8 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from word_ferry.components.config import Config, ResumeStrategy
-from word_ferry.components.dataset import BatchedTransSample
-from word_ferry.components.dropout_scheduler import DropoutScheduler
+from word_ferry.components.train.dataset import BatchedTransSample
+from word_ferry.components.train.dropout_scheduler import DropoutScheduler
 from word_ferry.components.logger import setup_logger
 from word_ferry.components.model import Model
 from word_ferry.components.tokenizer import Tokenizer

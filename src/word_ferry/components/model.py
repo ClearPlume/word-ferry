@@ -5,7 +5,7 @@ from torch import Tensor
 from torch.nn import Module, Embedding, TransformerEncoder, TransformerEncoderLayer, TransformerDecoderLayer, Linear
 from torch.nn.functional import softmax
 
-from word_ferry.components.cached_decoder import CachedDecoder
+from word_ferry.components.infer.cached_decoder import CachedDecoder
 from word_ferry.components.config import Config
 from word_ferry.components.tokenizer import Tokenizer
 from word_ferry.core.constants import PAD_TOKEN_ID

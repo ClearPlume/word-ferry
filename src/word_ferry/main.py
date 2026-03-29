@@ -2,12 +2,12 @@ from torch.optim import AdamW
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 
-from word_ferry.components.collate import collate_fn
-from word_ferry.components.config import Config
-from word_ferry.components.dataset import WordFerryDataset
-from word_ferry.components.dropout_scheduler import DropoutScheduler
+from word_ferry.components.train.collate import collate_fn
+from word_ferry.components.config import Config, ResumeStrategy
+from word_ferry.components.train.dataset import WordFerryDataset
+from word_ferry.components.train.dropout_scheduler import DropoutScheduler
 from word_ferry.components.model import Model
-from word_ferry.components.sampler import LengthGroupSampler
+from word_ferry.components.train.sampler import LengthGroupSampler
 from word_ferry.components.tokenizer import Tokenizer
 from word_ferry.path import get_data_dir
 from word_ferry.trainer import Trainer

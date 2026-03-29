@@ -4,7 +4,7 @@ from typing import Iterator, cast
 
 from torch.utils.data import Subset
 
-from word_ferry.components.dataset import TokenizedTransSample, WordFerryDataset
+from word_ferry.components.train.dataset import TokenizedTransSample, WordFerryDataset
 from word_ferry.path import get_data_dir
 
 
