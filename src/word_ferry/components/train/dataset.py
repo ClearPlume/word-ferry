@@ -44,18 +44,18 @@ class BatchedTransSample:
     分组后，批次内数据padding之后的结构
     
     Attributes:
-        src: [batch, src_max_len]
-        src_attention_mask: [batch, src_max_len]
-        tgt_in: [batch, tgt_max_len]
-        tgt_out: [batch, tgt_max_len]
-        tgt_attention_mask: [batch, tgt_max_len]
+        encoder_in: [batch, src_max_len]
+        encoder_in_valid_mask: [batch, src_max_len]
+        decoder_in: [batch, tgt_max_len]
+        labels: [batch, tgt_max_len]
+        decoder_in_valid_mask: [batch, tgt_max_len]
     """
 
-    src: Tensor
-    src_attention_mask: Tensor
-    tgt_in: Tensor
-    tgt_out: Tensor
-    tgt_attention_mask: Tensor
+    encoder_in: Tensor
+    encoder_in_valid_mask: Tensor
+    decoder_in: Tensor
+    labels: Tensor
+    decoder_in_valid_mask: Tensor
 
 
 class WordFerryDataset(Dataset):

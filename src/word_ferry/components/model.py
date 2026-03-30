@@ -5,8 +5,8 @@ from torch import Tensor
 from torch.nn import Module, Embedding, TransformerEncoder, TransformerEncoderLayer, TransformerDecoderLayer, Linear
 from torch.nn.functional import softmax
 
-from word_ferry.components.infer.cached_decoder import CachedDecoder
 from word_ferry.components.config import Config
+from word_ferry.components.infer.cached_decoder import CachedDecoder
 from word_ferry.components.tokenizer import Tokenizer
 from word_ferry.core.constants import PAD_TOKEN_ID
 from word_ferry.path import get_models_dir
@@ -70,29 +70,29 @@ class Model(Module):
 
     def forward(
             self,
-            src: Tensor,
-            src_attention_mask: Tensor,
-            tgt: Optional[Tensor] = None,
-            tgt_attention_mask: Optional[Tensor] = None,
+            encoder_in: Tensor,
+            encoder_in_valid_masks: Tensor,
+            decoder_in: Optional[Tensor] = None,
+            decoder_in_valid_mask: Optional[Tensor] = None,
     ) -> Tensor:
         """
         前向传播
         
-        :param src: 源序列 [batch_size, src_len]
-        :param src_attention_mask: 源序列attention_mask
-        :param tgt: 目标序列 [batch_size, tgt_len]
-        :param tgt_attention_mask: 目标序列attention_mask
+        :param encoder_in: 源序列 [batch_size, src_len]
+        :param encoder_in_valid_masks: 源序列attention_mask
+        :param decoder_in: 目标序列 [batch_size, tgt_len]
+        :param decoder_in_valid_mask: 目标序列attention_mask
         :return: 词汇表上的原始分数 [batch_size, tgt_len, vocab_size]
         """
-        memory, src_kpm = self.encode(src, src_attention_mask)
+        memory, memory_valid_mask = self.encode(encoder_in, encoder_in_valid_masks)
 
-        if tgt is None:
+        if decoder_in is None:
             return memory
 
-        return self.decode(tgt, memory, src_kpm, tgt_attention_mask)
+        return self.decode(decoder_in, memory, memory_valid_mask, decoder_in_valid_mask)
 
-    def encode(self, src: Tensor, src_attention_mask: Tensor):
-        src_attention_mask = src_attention_mask == 0
+    def encode(self, src: Tensor, src_valid_mask: Tensor):
+        memory_valid_mask = src_valid_mask == 0
 
         # 编码
         src_len = src.shape[1]
@@ -101,37 +101,37 @@ class Model(Module):
         src_pe = self.pos_encoding(src_pos)
         src_embedded = src_embedded + src_pe
 
-        memory = self.encoder(src_embedded, src_key_padding_mask=src_attention_mask)
-        return memory, src_attention_mask
+        memory = self.encoder(src_embedded, src_key_padding_mask=memory_valid_mask)
+        return memory, memory_valid_mask
 
     def decode(
             self,
-            tgt: Tensor,
+            decoder_in: Tensor,
             memory: Tensor,
-            src_attention_mask: Tensor,
-            tgt_attention_mask: Tensor = None,
+            memory_valid_mask: Tensor,
+            decoder_in_valid_mask: Tensor = None,
             last_only: bool = False,
     ) -> Tensor:
-        if tgt_attention_mask is None:
-            tgt_attention_mask = torch.ones(tgt.shape, device=tgt.device)
+        if decoder_in_valid_mask is None:
+            decoder_in_valid_mask = torch.ones(decoder_in.shape, device=decoder_in.device)
 
-        tgt_attention_mask = tgt_attention_mask == 0
+        decoder_in_valid_mask = decoder_in_valid_mask == 0
 
-        tgt_len = tgt.shape[1]
-        tgt_embedded = self.embedding(tgt)
-        tgt_pos = torch.arange(tgt_len, device=tgt.device)
-        tgt_pe = self.pos_encoding(tgt_pos)
-        tgt_embedded = tgt_embedded + tgt_pe
+        decoder_in_len = decoder_in.shape[1]
+        decoder_in_embedded = self.embedding(decoder_in)
+        decoder_in_pos = torch.arange(decoder_in_len, device=decoder_in.device)
+        decoder_in_pe = self.pos_encoding(decoder_in_pos)
+        decoder_in_embedded = decoder_in_embedded + decoder_in_pe
 
         # 目标因果mask
-        tgt_mask = torch.triu(torch.ones(tgt_len, tgt_len, device=tgt.device), diagonal=1).bool()
+        decoder_in_causal_mask = torch.triu(torch.ones(decoder_in_len, decoder_in_len, device=decoder_in.device), diagonal=1).bool()
 
         decoder_output = self.decoder(
-            tgt_embedded,
+            decoder_in_embedded,
             memory,
-            tgt_mask,
-            tgt_key_padding_mask=tgt_attention_mask,
-            memory_key_padding_mask=src_attention_mask,
+            decoder_in_causal_mask,
+            decoder_in_valid_mask,
+            memory_valid_mask,
         )
 
         if last_only:
@@ -154,7 +154,7 @@ class Model(Module):
         batch_size = src.size(0)
 
         # encoder 只跑一次
-        memory, src_key_padding_mask = self.encode(src, src_mask)
+        memory, memory_valid_mask = self.encode(src, src_mask)
 
         # 初始化解码序列 [zh/en/fr]
         generated = torch.full(
@@ -166,7 +166,7 @@ class Model(Module):
 
         length = 1  # 已经有 lang token
         for t in range(1, self.config.max_len + 1):
-            logits = self.decode(generated[:, :t], memory, src_key_padding_mask, last_only=True, )
+            logits = self.decode(generated[:, :t], memory, memory_valid_mask, last_only=True)
             next_logits = logits.squeeze(1)  # [b, 48000]
 
             if do_sample:

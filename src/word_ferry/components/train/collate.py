@@ -20,7 +20,7 @@ def collate_fn(batch: list[TokenizedTransSample]) -> BatchedTransSample:
     # Padding源序列
     src_max_len = max(len(src) for src in src_list)
     padded_src = []
-    src_attention_mask = []
+    src_valid_mask = []
 
     for src in src_list:
         padding_len = src_max_len - len(src)
@@ -30,13 +30,13 @@ def collate_fn(batch: list[TokenizedTransSample]) -> BatchedTransSample:
         mask = torch.cat([torch.ones(len(src)), torch.zeros(padding_len)])
 
         padded_src.append(padded)
-        src_attention_mask.append(mask)
+        src_valid_mask.append(mask)
 
     # Padding目标序列，需分为输入和输出两部分
     tgt_max_len = max(len(tgt) for tgt in tgt_list) - 1  # 去除BOS或者EOS之后的最大长度
     padded_tgt_in = []
     padded_tgt_out = []
-    tgt_attention_mask = []
+    tgt_in_valid_mask = []
 
     for tgt in tgt_list:
         # 去掉最后一个token <[EOS]> 作为解码器输入 [BOS] + tokens[:-1]
@@ -54,16 +54,16 @@ def collate_fn(batch: list[TokenizedTransSample]) -> BatchedTransSample:
         padded_out = torch_f.pad(tgt_out, (0, out_padding_len), value=PAD_TOKEN_ID)
 
         # mask = 原始长度的1 + 填充长度的0
-        mask = torch.cat([torch.ones(len(tgt_in)), torch.zeros(out_padding_len)])
+        mask = torch.cat([torch.ones(len(tgt_in)), torch.zeros(in_padding_len)])
 
         padded_tgt_in.append(padded_in)
         padded_tgt_out.append(padded_out)
-        tgt_attention_mask.append(mask)
+        tgt_in_valid_mask.append(mask)
 
     return BatchedTransSample(
         torch.stack(padded_src),
-        torch.stack(src_attention_mask),
+        torch.stack(src_valid_mask),
         torch.stack(padded_tgt_in),
         torch.stack(padded_tgt_out),
-        torch.stack(tgt_attention_mask),
+        torch.stack(tgt_in_valid_mask),
     )

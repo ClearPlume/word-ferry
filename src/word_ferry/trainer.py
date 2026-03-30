@@ -15,11 +15,11 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from word_ferry.components.config import Config, ResumeStrategy
-from word_ferry.components.train.dataset import BatchedTransSample
-from word_ferry.components.train.dropout_scheduler import DropoutScheduler
 from word_ferry.components.logger import setup_logger
 from word_ferry.components.model import Model
 from word_ferry.components.tokenizer import Tokenizer
+from word_ferry.components.train.dataset import BatchedTransSample
+from word_ferry.components.train.dropout_scheduler import DropoutScheduler
 from word_ferry.core.constants import PAD_TOKEN_ID
 from word_ferry.path import get_logs_dir, get_models_dir
 
@@ -287,7 +287,7 @@ class Trainer:
         progress: tqdm[BatchedTransSample] = tqdm(self.train_loader, f"Epoch {epoch} [Train]")
 
         for idx, batch in enumerate(progress):
-            loss, _, _ = self._predict(batch)
+            loss = self._predict(batch)
             total_loss += loss.item()
 
             loss.backward()
@@ -320,7 +320,7 @@ class Trainer:
         loss_progress: tqdm[BatchedTransSample] = tqdm(self.val_loader, f"Epoch {epoch} [Val]")
 
         for idx, batch in enumerate(loss_progress):
-            loss, src, target = self._predict(batch)
+            loss = self._predict(batch)
             total_loss += loss.item()
 
             loss_progress.set_postfix({
@@ -344,24 +344,24 @@ class Trainer:
 
         return avg_loss, bleu_data
 
-    def _predict(self, batch: BatchedTransSample) -> tuple[Tensor, Tensor, Tensor]:
+    def _predict(self, batch: BatchedTransSample) -> Tensor:
         """
         模型预测
         
-        :return tuple[loss, src, target]
+        :return loss
         """
 
-        src = batch.src.to(self.config.device)
-        src_attention_masks = batch.src_attention_mask.to(self.config.device)
-        tgt = batch.tgt_in.to(self.config.device)
-        tgt_attention_masks = batch.tgt_attention_mask.to(self.config.device)
+        encoder_in = batch.encoder_in.to(self.config.device)
+        encoder_in_valid_masks = batch.encoder_in_valid_mask.to(self.config.device)
+        decoder_in = batch.decoder_in.to(self.config.device)
+        decoder_in_valid_mask = batch.decoder_in_valid_mask.to(self.config.device)
 
-        target = batch.tgt_out.to(self.config.device)
+        labels = batch.labels.to(self.config.device)
 
-        logits: Tensor = self.model(src, src_attention_masks, tgt, tgt_attention_masks)
+        logits: Tensor = self.model(encoder_in, encoder_in_valid_masks, decoder_in, decoder_in_valid_mask)
 
-        loss = self.criterion(logits.view(-1, self.tokenizer.vocab_size), target.view(-1))
-        return loss, src, target
+        loss = self.criterion(logits.view(-1, self.tokenizer.vocab_size), labels.view(-1))
+        return loss
 
     def _calc_score(self, epoch: int, score_data: list[BatchedTransSample]) -> float:
         bleu_progress: tqdm[BatchedTransSample] = tqdm(
@@ -373,14 +373,14 @@ class Trainer:
         references = []
         for idx, batch in enumerate(bleu_progress):
             generated = self.model.generate(
-                batch.src.to(self.config.device),
-                batch.src_attention_mask.to(self.config.device),
-                batch.tgt_in.to(self.config.device)[:, 0],
+                batch.encoder_in.to(self.config.device),
+                batch.encoder_in_valid_mask.to(self.config.device),
+                batch.decoder_in.to(self.config.device)[:, 0],
             )
 
             # generated: [batch_size, seq_len]，每行是 [lang, t1, t2, ..., EOS, PAD, PAD, ...]
-            for seq in generated:
-                token_ids = seq.tolist()
+            for generated_line in generated:
+                token_ids = generated_line.tolist()
                 # 去掉语言标签，截断到 EOS
                 if self.tokenizer.eos_token_id in token_ids:
                     token_ids = token_ids[1:token_ids.index(self.tokenizer.eos_token_id)]
@@ -389,9 +389,9 @@ class Trainer:
                 hypotheses.append(self.tokenizer.decode(token_ids))
 
             # references 从 batch.tgt_out 里解码
-            for seq in batch.tgt_out:
+            for label in batch.labels:
                 # 移除语言标签
-                token_ids = seq.tolist()[1:]
+                token_ids = label.tolist()[1:]
                 token_ids = token_ids[:token_ids.index(self.tokenizer.eos_token_id)]
                 references.append(self.tokenizer.decode(token_ids))
 

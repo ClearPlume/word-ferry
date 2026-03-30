@@ -13,17 +13,23 @@ class CachedDecoder(Module):
         super().__init__()
         self.layers = ModuleList([copy.deepcopy(decoder_layer) for _ in range(num_layers)])
 
-    def forward(self, tgt: Tensor, memory: Tensor, tgt_mask: Tensor, tgt_key_padding_mask: Tensor, memory_key_padding_mask: Tensor) -> Tensor:
-        output = tgt
+    def forward(
+            self,
+            decoder_in_embedded: Tensor,
+            memory: Tensor,
+            decoder_in_causal_mask: Tensor,
+            decoder_in_valid_mask: Tensor,
+            memory_valid_mask: Tensor,
+    ) -> Tensor:
+        output = decoder_in_embedded
 
         for layer in self.layers:
             output = layer(
                 output,
                 memory,
-                tgt_mask,
-                tgt_key_padding_mask=tgt_key_padding_mask,
-                memory_key_padding_mask=memory_key_padding_mask,
-                tgt_is_causal=True,
+                decoder_in_causal_mask,
+                tgt_key_padding_mask=decoder_in_valid_mask,
+                memory_key_padding_mask=memory_valid_mask,
             )
 
         return output
