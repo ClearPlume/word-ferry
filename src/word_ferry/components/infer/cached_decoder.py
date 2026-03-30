@@ -16,9 +16,9 @@ class CachedDecoder(Module):
     def forward(
             self,
             decoder_in: Tensor,
-            memory: Tensor,
             decoder_in_causal_mask: Tensor,
             decoder_in_valid_mask: Tensor,
+            memory: Tensor,
             memory_valid_mask: Tensor,
     ) -> Tensor:
         output = decoder_in
@@ -26,10 +26,10 @@ class CachedDecoder(Module):
         for layer in self.layers:
             output = layer(
                 output,
-                memory,
                 decoder_in_causal_mask,
-                tgt_key_padding_mask=decoder_in_valid_mask,
-                memory_key_padding_mask=memory_valid_mask,
+                decoder_in_valid_mask,
+                memory,
+                memory_valid_mask,
             )
 
         return output

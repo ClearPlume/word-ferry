@@ -128,9 +128,9 @@ class Model(Module):
 
         decoder_output = self.decoder(
             decoder_in_embedded,
-            memory,
             decoder_in_causal_mask,
             decoder_in_valid_mask,
+            memory,
             memory_valid_mask,
         )
 
