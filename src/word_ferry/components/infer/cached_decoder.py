@@ -15,13 +15,13 @@ class CachedDecoder(Module):
 
     def forward(
             self,
-            decoder_in_embedded: Tensor,
+            decoder_in: Tensor,
             memory: Tensor,
             decoder_in_causal_mask: Tensor,
             decoder_in_valid_mask: Tensor,
             memory_valid_mask: Tensor,
     ) -> Tensor:
-        output = decoder_in_embedded
+        output = decoder_in
 
         for layer in self.layers:
             output = layer(
