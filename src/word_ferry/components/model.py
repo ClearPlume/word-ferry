@@ -2,11 +2,12 @@ from typing import Optional
 
 import torch
 from torch import Tensor
-from torch.nn import Module, Embedding, TransformerEncoder, TransformerEncoderLayer, TransformerDecoderLayer, Linear
+from torch.nn import Module, Embedding, TransformerEncoder, TransformerEncoderLayer, Linear
 from torch.nn.functional import softmax
 
 from word_ferry.components.config import Config
 from word_ferry.components.infer.cached_decoder import CachedDecoder
+from word_ferry.components.infer.cached_decoder_layer import CachedDecoderLayer
 from word_ferry.components.tokenizer import Tokenizer
 from word_ferry.core.constants import PAD_TOKEN_ID
 from word_ferry.path import get_models_dir
@@ -50,14 +51,7 @@ class Model(Module):
         self.encoder = TransformerEncoder(encoder_layer, config.n_encoder_layers, enable_nested_tensor=False)
 
         # Transformer解码器
-        decoder_layer = TransformerDecoderLayer(
-            d_model=config.d_model,
-            nhead=config.n_head,
-            dim_feedforward=config.d_model * config.ffn_ratio,
-            dropout=config.initial_dropout,
-            batch_first=True,
-            norm_first=True,
-        )
+        decoder_layer = CachedDecoderLayer(config.d_model, config.n_head, config.d_model * config.ffn_ratio, config.initial_dropout)
         self.decoder = CachedDecoder(decoder_layer, config.n_decoder_layers)
 
         # 输出投影层

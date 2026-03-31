@@ -1,7 +1,9 @@
 import copy
 
 from torch import Tensor
-from torch.nn import TransformerDecoderLayer, ModuleList, Module
+from torch.nn import ModuleList, Module
+
+from word_ferry.components.infer.cached_decoder_layer import CachedDecoderLayer
 
 
 class CachedDecoder(Module):
@@ -9,7 +11,7 @@ class CachedDecoder(Module):
 
     layers: ModuleList
 
-    def __init__(self, decoder_layer: TransformerDecoderLayer, num_layers: int):
+    def __init__(self, decoder_layer: CachedDecoderLayer, num_layers: int):
         super().__init__()
         self.layers = ModuleList([copy.deepcopy(decoder_layer) for _ in range(num_layers)])
 

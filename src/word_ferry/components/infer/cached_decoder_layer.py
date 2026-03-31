@@ -1,0 +1,91 @@
+from typing import Callable
+
+import torch.nn.functional as F
+from torch import nn, Tensor
+from torch.nn import MultiheadAttention, Linear, Dropout, LayerNorm
+
+
+class CachedDecoderLayer(nn.Module):
+    """支持KV Cached的CachedDecoderLayer"""
+
+    self_attn: MultiheadAttention
+    multihead_attn: MultiheadAttention
+
+    linear1: Linear
+    dropout: Dropout
+    linear2: Linear
+
+    norm1: LayerNorm
+    norm2: LayerNorm
+    norm3: LayerNorm
+    dropout1: Dropout
+    dropout2: Dropout
+    dropout3: Dropout
+
+    activation: Callable[[Tensor, bool], Tensor]
+
+    def __init__(self, d_model: int, n_head: int, dim_feedforward: int, dropout: float):
+        super().__init__()
+        layer_norm_eps = 1e-5
+        batch_first = True
+        bias = True
+
+        self.self_attn = MultiheadAttention(d_model, n_head, dropout, batch_first=batch_first, bias=bias)
+        self.multihead_attn = MultiheadAttention(d_model, n_head, dropout, batch_first=batch_first, bias=bias)
+
+        self.linear1 = Linear(d_model, dim_feedforward, bias)
+        self.dropout = Dropout(dropout)
+        self.linear2 = Linear(dim_feedforward, d_model, bias)
+
+        self.norm1 = LayerNorm(d_model, layer_norm_eps, bias)
+        self.norm2 = LayerNorm(d_model, layer_norm_eps, bias)
+        self.norm3 = LayerNorm(d_model, layer_norm_eps, bias)
+        self.dropout1 = Dropout(dropout)
+        self.dropout2 = Dropout(dropout)
+        self.dropout3 = Dropout(dropout)
+
+        self.activation = F.relu
+
+    def forward(
+            self,
+            decoder_in: Tensor,
+            decoder_in_causal_mask: Tensor,
+            decoder_in_valid_mask: Tensor,
+            memory: Tensor,
+            memory_valid_mask: Tensor,
+    ) -> Tensor:
+        x = decoder_in
+
+        x = x + self._self_attention_block(self.norm1(x), decoder_in_causal_mask, decoder_in_valid_mask)
+        x = x + self._multihead_attention_block(self.norm2(x), memory, memory_valid_mask)
+        x = x + self._feed_forward_block(self.norm3(x))
+
+        return x
+
+    def _self_attention_block(self, x: Tensor, decoder_in_causal_mask: Tensor, decoder_in_valid_mask: Tensor) -> Tensor:
+        x = self.self_attn(
+            x,
+            x,
+            x,
+            key_padding_mask=decoder_in_valid_mask,
+            need_weights=False,
+            attn_mask=decoder_in_causal_mask,
+            is_causal=True,
+        )[0]
+        return self.dropout1(x)
+
+    def _multihead_attention_block(self, x: Tensor, memory: Tensor, memory_valid_mask: Tensor) -> Tensor:
+        x = self.multihead_attn(
+            x,
+            memory,
+            memory,
+            key_padding_mask=memory_valid_mask,
+            need_weights=False,
+            attn_mask=None,
+            is_causal=False,
+        )[0]
+        return self.dropout2(x)
+
+    def _feed_forward_block(self, x: Tensor) -> Tensor:
+        x = self.linear2(self.dropout(self.activation(self.linear1(x))))
+        return self.dropout3(x)
