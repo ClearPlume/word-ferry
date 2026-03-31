@@ -2,14 +2,16 @@ from typing import Callable
 
 import torch.nn.functional as F
 from torch import nn, Tensor
-from torch.nn import MultiheadAttention, Linear, Dropout, LayerNorm
+from torch.nn import Linear, Dropout, LayerNorm
+
+from word_ferry.components.infer.cached_multihead_attention import CachedMultiheadAttention
 
 
 class CachedDecoderLayer(nn.Module):
     """支持KV Cached的CachedDecoderLayer"""
 
-    self_attn: MultiheadAttention
-    multihead_attn: MultiheadAttention
+    self_attn: CachedMultiheadAttention
+    multihead_attn: CachedMultiheadAttention
 
     linear1: Linear
     dropout: Dropout
@@ -30,8 +32,8 @@ class CachedDecoderLayer(nn.Module):
         batch_first = True
         bias = True
 
-        self.self_attn = MultiheadAttention(d_model, n_head, dropout, batch_first=batch_first, bias=bias)
-        self.multihead_attn = MultiheadAttention(d_model, n_head, dropout, batch_first=batch_first, bias=bias)
+        self.self_attn = CachedMultiheadAttention(d_model, n_head, dropout, batch_first=batch_first, bias=bias)
+        self.multihead_attn = CachedMultiheadAttention(d_model, n_head, dropout, batch_first=batch_first, bias=bias)
 
         self.linear1 = Linear(d_model, dim_feedforward, bias)
         self.dropout = Dropout(dropout)
