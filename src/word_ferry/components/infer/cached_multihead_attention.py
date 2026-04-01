@@ -9,43 +9,21 @@ from torch.nn.modules.linear import Linear
 class CachedMultiheadAttention(nn.Module):
     """支持KV Cached的CachedMultiheadAttention"""
 
-    def __init__(
-            self,
-            embed_dim: int,
-            num_heads: int,
-            dropout: float,
-            batch_first: bool,
-            bias: bool,
-            add_zero_attn=False,
-            kdim=None,
-            vdim=None,
-            device=None,
-            dtype=None,
-    ) -> None:
-        factory_kwargs = {"device": device, "dtype": dtype}
+    def __init__(self, d_model: int, n_head: int, dropout: float) -> None:
         super().__init__()
-        self.embed_dim = embed_dim
-        self.kdim = kdim if kdim is not None else embed_dim
-        self.vdim = vdim if vdim is not None else embed_dim
-        self._qkv_same_embed_dim = self.kdim == embed_dim and self.vdim == embed_dim
+        self.d_model = d_model
 
-        self.num_heads = num_heads
+        self.n_head = n_head
         self.dropout = dropout
-        self.batch_first = batch_first
-        self.head_dim = embed_dim // num_heads
-        assert self.head_dim * num_heads == self.embed_dim, "embed_dim must be divisible by num_heads"
+        self.head_dim = d_model // n_head
 
-        self.in_proj_weight = Parameter(torch.empty((3 * embed_dim, embed_dim), **factory_kwargs))
+        self.in_proj_weight = Parameter(torch.empty((3 * d_model, d_model)))
         self.register_parameter("q_proj_weight", None)
         self.register_parameter("k_proj_weight", None)
         self.register_parameter("v_proj_weight", None)
 
-        self.in_proj_bias = Parameter(torch.empty(3 * embed_dim, **factory_kwargs))
-        self.out_proj = Linear(embed_dim, embed_dim, bias=bias, **factory_kwargs)
-
-        self.bias_k = self.bias_v = None
-
-        self.add_zero_attn = add_zero_attn
+        self.in_proj_bias = Parameter(torch.empty(3 * d_model))
+        self.out_proj = Linear(d_model, d_model)
 
         self._reset_parameters()
 
@@ -58,39 +36,36 @@ class CachedMultiheadAttention(nn.Module):
     def forward(
             self,
             query: Tensor,
-            key: Tensor,
-            key_padding_mask: Tensor | None = None,
-            need_weights: bool = True,
-            attn_mask: Tensor | None = None,
-            average_attn_weights: bool = True,
-            is_causal: bool = False,
+            kv: Tensor,
+            query_causal_mask: Tensor | None = None,
+            kv_valid_mask: Tensor | None = None,
     ) -> tuple[Tensor, Tensor | None]:
-        if query is key:
-            query = key = value = query.transpose(1, 0)
+        if query is kv:
+            query = kv = value = query.transpose(1, 0)
         else:
-            query, key = (x.transpose(1, 0) for x in (query, key))
-            value = key
+            query, kv = (x.transpose(1, 0) for x in (query, kv))
+            value = kv
 
         attn_output, attn_output_weights = F.multi_head_attention_forward(
             query,
-            key,
+            kv,
             value,
-            self.embed_dim,
-            self.num_heads,
+            self.d_model,
+            self.n_head,
             self.in_proj_weight,
             self.in_proj_bias,
-            self.bias_k,
-            self.bias_v,
-            self.add_zero_attn,
+            None,
+            None,
+            False,
             self.dropout,
             self.out_proj.weight,
             self.out_proj.bias,
             training=self.training,
-            key_padding_mask=key_padding_mask,
-            need_weights=need_weights,
-            attn_mask=attn_mask,
-            average_attn_weights=average_attn_weights,
-            is_causal=is_causal,
+            key_padding_mask=kv_valid_mask,
+            need_weights=False,
+            attn_mask=query_causal_mask,
+            average_attn_weights=True,
+            is_causal=query_causal_mask is not None,
         )
 
         return attn_output.transpose(1, 0), attn_output_weights
