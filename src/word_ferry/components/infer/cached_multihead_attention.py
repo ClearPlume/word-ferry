@@ -59,31 +59,17 @@ class CachedMultiheadAttention(nn.Module):
             self,
             query: Tensor,
             key: Tensor,
-            value: Tensor,
             key_padding_mask: Tensor | None = None,
             need_weights: bool = True,
             attn_mask: Tensor | None = None,
             average_attn_weights: bool = True,
             is_causal: bool = False,
     ) -> tuple[Tensor, Tensor | None]:
-        key_padding_mask = F._canonical_mask(
-            mask=key_padding_mask,
-            mask_name="key_padding_mask",
-            other_type=F._none_or_dtype(attn_mask),
-            other_name="attn_mask",
-            target_type=query.dtype,
-        )
-
-        attn_mask = F._canonical_mask(
-            mask=attn_mask,
-            mask_name="attn_mask",
-            other_type=None,
-            other_name="",
-            target_type=query.dtype,
-            check_other=False,
-        )
-
-        query, key, value = (x.transpose(1, 0) for x in (query, key, value))
+        if query is key:
+            query = key = value = query.transpose(1, 0)
+        else:
+            query, key = (x.transpose(1, 0) for x in (query, key))
+            value = key
 
         attn_output, attn_output_weights = F.multi_head_attention_forward(
             query,

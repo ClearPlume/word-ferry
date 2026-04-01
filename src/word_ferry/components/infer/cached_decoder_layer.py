@@ -68,7 +68,6 @@ class CachedDecoderLayer(nn.Module):
         x = self.self_attn(
             x,
             x,
-            x,
             key_padding_mask=decoder_in_valid_mask,
             need_weights=False,
             attn_mask=decoder_in_causal_mask,
@@ -79,7 +78,6 @@ class CachedDecoderLayer(nn.Module):
     def _multihead_attention_block(self, x: Tensor, memory: Tensor, memory_valid_mask: Tensor) -> Tensor:
         x = self.multihead_attn(
             x,
-            memory,
             memory,
             key_padding_mask=memory_valid_mask,
             need_weights=False,
