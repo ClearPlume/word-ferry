@@ -58,13 +58,13 @@ class CachedDecoderLayer(nn.Module):
     ) -> Tensor:
         x = decoder_in
 
-        x = x + self._self_attention_block(self.norm1(x), decoder_in_causal_mask, decoder_in_valid_mask)
-        x = x + self._multihead_attention_block(self.norm2(x), memory, memory_valid_mask)
+        x = x + self._self_attn_block(self.norm1(x), decoder_in_causal_mask, decoder_in_valid_mask)
+        x = x + self._cross_attn_block(self.norm2(x), memory, memory_valid_mask)
         x = x + self._feed_forward_block(self.norm3(x))
 
         return x
 
-    def _self_attention_block(self, x: Tensor, decoder_in_causal_mask: Tensor, decoder_in_valid_mask: Tensor) -> Tensor:
+    def _self_attn_block(self, x: Tensor, decoder_in_causal_mask: Tensor, decoder_in_valid_mask: Tensor) -> Tensor:
         x = self.self_attn(
             x,
             x,
@@ -75,7 +75,7 @@ class CachedDecoderLayer(nn.Module):
         )[0]
         return self.dropout1(x)
 
-    def _multihead_attention_block(self, x: Tensor, memory: Tensor, memory_valid_mask: Tensor) -> Tensor:
+    def _cross_attn_block(self, x: Tensor, memory: Tensor, memory_valid_mask: Tensor) -> Tensor:
         x = self.multihead_attn(
             x,
             memory,

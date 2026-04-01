@@ -7,11 +7,11 @@ from word_ferry.components.tokenizer import Tokenizer
 from word_ferry.path import get_data_dir, get_models_dir
 
 
-def run_test(model: Model, src: Tensor, attention_mask: Tensor, lang: Tensor) -> Tensor:
+def run_test(model: Model, src: Tensor, attn_mask: Tensor, lang: Tensor) -> Tensor:
     device = model.config.device
 
     with torch.no_grad():
-        generated = model.generate(src.to(device), attention_mask.to(device), lang.to(device))
+        generated = model.generate(src.to(device), attn_mask.to(device), lang.to(device))
 
     return generated
 
@@ -43,11 +43,11 @@ def interactive_test(model: Model, remove_lang_token=True):
             continue
 
         input_ids = torch.tensor(tokenizer.encode(data, False)[:model.config.max_len]).unsqueeze(0)
-        attention_mask = torch.ones(input_ids.shape[1]).unsqueeze(0)
+        attn_mask = torch.ones(input_ids.shape[1]).unsqueeze(0)
         lang_tokens = torch.tensor(tokenizer.encode(f"<{lang}>", False)).unsqueeze(0)
 
         # generated: [batch_size, seq_len]，每行是 [lang, t1, t2, ..., EOS, PAD, PAD, ...]
-        generated = run_test(model, input_ids, attention_mask, lang_tokens)
+        generated = run_test(model, input_ids, attn_mask, lang_tokens)
 
         result = []
         for seq in generated:
