@@ -1,3 +1,5 @@
+from typing import Optional
+
 import torch
 import torch.nn.functional as F
 from torch import nn, Tensor
@@ -37,8 +39,8 @@ class CachedMultiheadAttention(nn.Module):
             self,
             query: Tensor,
             kv: Tensor,
-            query_causal_mask: Tensor | None = None,
-            kv_valid_mask: Tensor | None = None,
+            query_causal_mask: Optional[Tensor],
+            kv_valid_mask: Tensor,
     ) -> tuple[Tensor, Tensor | None]:
         if query is kv:
             query = kv = value = query.transpose(1, 0)
