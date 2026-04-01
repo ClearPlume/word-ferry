@@ -35,39 +35,33 @@ class CachedMultiheadAttention(nn.Module):
         constant_(self.in_proj_bias, 0.0)
         constant_(self.out_proj.bias, 0.0)
 
-    def forward(
-            self,
-            query: Tensor,
-            kv: Tensor,
-            query_causal_mask: Optional[Tensor],
-            kv_valid_mask: Tensor,
-    ) -> tuple[Tensor, Tensor | None]:
+    def forward(self, query: Tensor, kv: Tensor, query_causal_mask: Optional[Tensor], kv_valid_mask: Tensor) -> tuple[Tensor, Optional[Tensor]]:
+        d_head = self.d_model // self.n_head
+        batch_size, q_len, _ = query.shape
+        _, kv_len, _ = kv.shape
+
+        attn_mask = kv_valid_mask.unsqueeze(1).unsqueeze(2)
+        attn_mask = torch.where(attn_mask, torch.finfo(query.dtype).min, 0.0)
+
         if query is kv:
-            query = kv = value = query.transpose(1, 0)
+            q, k, v = F.linear(query, self.in_proj_weight, self.in_proj_bias).chunk(3, dim=-1)
         else:
-            query, kv = (x.transpose(1, 0) for x in (query, kv))
-            value = kv
+            w_q, w_kv = self.in_proj_weight.split([self.d_model, self.d_model * 2])
+            b_q, b_kv = self.in_proj_bias.split([self.d_model, self.d_model * 2])
+            q = F.linear(query, w_q, b_q)
+            k, v = F.linear(kv, w_kv, b_kv).chunk(2, dim=-1)
 
-        attn_output, attn_output_weights = F.multi_head_attention_forward(
-            query,
-            kv,
-            value,
-            self.d_model,
-            self.n_head,
-            self.in_proj_weight,
-            self.in_proj_bias,
-            None,
-            None,
-            False,
-            self.dropout,
-            self.out_proj.weight,
-            self.out_proj.bias,
-            training=self.training,
-            key_padding_mask=kv_valid_mask,
-            need_weights=False,
-            attn_mask=query_causal_mask,
-            average_attn_weights=True,
-            is_causal=query_causal_mask is not None,
-        )
+        if query_causal_mask is not None:
+            causal = query_causal_mask.unsqueeze(0).unsqueeze(0)
+            causal = torch.where(causal, torch.finfo(query.dtype).min, 0.0)
+            attn_mask = attn_mask + causal
 
-        return attn_output.transpose(1, 0), attn_output_weights
+        q = q.view(batch_size, q_len, self.n_head, d_head).transpose(1, 2)
+        k = k.view(batch_size, kv_len, self.n_head, d_head).transpose(1, 2)
+        v = v.view(batch_size, kv_len, self.n_head, d_head).transpose(1, 2)
+
+        attn_output = F.scaled_dot_product_attention(q, k, v, attn_mask, self.dropout if self.training else 0.0)
+        attn_output = attn_output.transpose(1, 2).contiguous().view(batch_size, q_len, self.d_model)
+        attn_output = F.linear(attn_output, self.out_proj.weight, self.out_proj.bias)
+
+        return attn_output, None
