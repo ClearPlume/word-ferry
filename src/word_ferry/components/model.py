@@ -1,5 +1,3 @@
-from typing import Optional
-
 import torch
 from torch import Tensor
 from torch.nn import Module, Embedding, TransformerEncoder, TransformerEncoderLayer, Linear
@@ -66,8 +64,8 @@ class Model(Module):
             self,
             encoder_in: Tensor,
             encoder_in_valid_masks: Tensor,
-            decoder_in: Optional[Tensor] = None,
-            decoder_in_valid_mask: Optional[Tensor] = None,
+            decoder_in: Tensor,
+            decoder_in_valid_mask: Tensor,
     ) -> Tensor:
         """
         前向传播
@@ -83,7 +81,7 @@ class Model(Module):
         if decoder_in is None:
             return memory
 
-        return self.decode(decoder_in, memory, memory_valid_mask, decoder_in_valid_mask)
+        return self.decode(decoder_in, decoder_in_valid_mask, memory, memory_valid_mask)
 
     def encode(self, src: Tensor, src_valid_mask: Tensor):
         memory_valid_mask = src_valid_mask == 0
@@ -101,21 +99,18 @@ class Model(Module):
     def decode(
             self,
             decoder_in: Tensor,
+            decoder_in_valid_mask: Tensor,
             memory: Tensor,
             memory_valid_mask: Tensor,
-            decoder_in_valid_mask: Tensor = None,
             last_only: bool = False,
     ) -> Tensor:
-        if decoder_in_valid_mask is None:
-            decoder_in_valid_mask = torch.ones(decoder_in.shape, device=decoder_in.device)
-
-        decoder_in_valid_mask = decoder_in_valid_mask == 0
-
         decoder_in_len = decoder_in.shape[1]
         decoder_in_embedded = self.embedding(decoder_in)
         decoder_in_pos = torch.arange(decoder_in_len, device=decoder_in.device)
         decoder_in_pe = self.pos_encoding(decoder_in_pos)
         decoder_in_embedded = decoder_in_embedded + decoder_in_pe
+
+        decoder_in_valid_mask = decoder_in_valid_mask == 0
 
         # 目标因果mask
         decoder_in_causal_mask = torch.triu(torch.ones(decoder_in_len, decoder_in_len, device=decoder_in.device), diagonal=1).bool()
@@ -141,7 +136,7 @@ class Model(Module):
             src_mask: Tensor,
             lang_tokens: Tensor,
             do_sample: bool = False,
-            temperature: float = 1.0,
+            temperature: float = 0.3,
     ) -> Tensor:
         """一次完整推理"""
         device = src.device
@@ -151,32 +146,27 @@ class Model(Module):
         memory, memory_valid_mask = self.encode(src, src_mask)
 
         # 初始化解码序列 [zh/en/fr]
-        generated = torch.full(
-            (batch_size, self.config.max_len + 1),  # +1 给 lang token
-            PAD_TOKEN_ID, dtype=torch.long, device=device,
-        )
-        generated[:, 0] = lang_tokens
+        generated = lang_tokens
         finished = torch.zeros(batch_size, dtype=torch.bool, device=device)
 
-        length = 1  # 已经有 lang token
-        for t in range(1, self.config.max_len + 1):
-            logits = self.decode(generated[:, :t], memory, memory_valid_mask, last_only=True)
-            next_logits = logits.squeeze(1)  # [b, 48000]
+        for _ in range(self.config.max_len):
+            g_mask = torch.ones(generated.shape, device=generated.device)
+            # [batch, seq, vocab]
+            logits = self.decode(generated, g_mask, memory, memory_valid_mask, True)
 
             if do_sample:
-                next_tokens = torch.multinomial(softmax(next_logits / temperature), 1, ).squeeze(1)
+                next_tokens = torch.multinomial(softmax(logits[:, -1, :] / temperature, 1), 1)
             else:
-                next_tokens = next_logits.argmax(dim=-1)
+                next_tokens = logits.argmax(2)
 
             next_tokens[finished] = PAD_TOKEN_ID
-            generated[:, t] = next_tokens
-            finished |= (next_tokens == self.tokenizer.eos_token_id)
+            generated = torch.cat([generated, next_tokens], 1)
+            finished |= (next_tokens.squeeze(0) == self.tokenizer.eos_token_id)
 
-            length = t + 1
             if finished.all():
                 break
 
-        return generated[:, :length]
+        return generated
 
     @property
     def param_num(self) -> str:
