@@ -81,7 +81,7 @@ class Model(Module):
         if decoder_in is None:
             return memory
 
-        return self.decode(decoder_in, decoder_in_valid_mask, memory, memory_valid_mask)
+        return self.decode(decoder_in, decoder_in_valid_mask, memory, memory_valid_mask, [None] * 8)[0]
 
     def encode(self, src: Tensor, src_valid_mask: Tensor):
         memory_valid_mask = src_valid_mask == 0
@@ -102,11 +102,14 @@ class Model(Module):
             decoder_in_valid_mask: Tensor,
             memory: Tensor,
             memory_valid_mask: Tensor,
+            caches: list[tuple[Tensor, Tensor, Tensor, Tensor] | None],
             last_only: bool = False,
-    ) -> Tensor:
+    ) -> tuple[Tensor, list[tuple[Tensor, Tensor, Tensor, Tensor]]]:
+        first_layer = caches[0]
+        past_len = first_layer[0].shape[2] if first_layer is not None else 0
         decoder_in_len = decoder_in.shape[1]
         decoder_in_embedded = self.embedding(decoder_in)
-        decoder_in_pos = torch.arange(decoder_in_len, device=decoder_in.device)
+        decoder_in_pos = torch.arange(past_len, past_len + decoder_in_len, device=decoder_in.device)
         decoder_in_pe = self.pos_encoding(decoder_in_pos)
         decoder_in_embedded = decoder_in_embedded + decoder_in_pe
 
@@ -115,19 +118,20 @@ class Model(Module):
         # 目标因果mask
         decoder_in_causal_mask = torch.triu(torch.ones(decoder_in_len, decoder_in_len, device=decoder_in.device), diagonal=1).bool()
 
-        decoder_output = self.decoder(
+        decoder_output, updated_caches = self.decoder(
             decoder_in_embedded,
             decoder_in_causal_mask,
             decoder_in_valid_mask,
             memory,
             memory_valid_mask,
+            caches,
         )
 
         if last_only:
             decoder_output = decoder_output[:, -1:, :]
 
         # 输出投影
-        return self.output_projection(decoder_output)
+        return self.output_projection(decoder_output), updated_caches
 
     @torch.no_grad()
     def generate(
@@ -139,6 +143,7 @@ class Model(Module):
             temperature: float = 0.3,
     ) -> Tensor:
         """一次完整推理"""
+        kv_caches: list[tuple[Tensor, Tensor, Tensor, Tensor] | None] = [None] * 8
         device = src.device
         batch_size = src.size(0)
 
@@ -146,13 +151,17 @@ class Model(Module):
         memory, memory_valid_mask = self.encode(src, src_mask)
 
         # 初始化解码序列 [zh/en/fr]
+        # batch, seq
         generated = lang_tokens
+        next_tokens = lang_tokens
         finished = torch.zeros(batch_size, dtype=torch.bool, device=device)
 
         for _ in range(self.config.max_len):
-            g_mask = torch.ones(generated.shape, device=generated.device)
-            # [batch, seq, vocab]
-            logits = self.decode(generated, g_mask, memory, memory_valid_mask, True)
+            first_layer = kv_caches[0]
+            past_len = first_layer[0].shape[2] if first_layer is not None else 0
+            query_mask = torch.ones((next_tokens.shape[0], past_len + 1), device=generated.device)
+            logits, updated_caches = self.decode(next_tokens, query_mask, memory, memory_valid_mask, kv_caches, True)
+            kv_caches = updated_caches
 
             if do_sample:
                 next_tokens = torch.multinomial(softmax(logits[:, -1, :] / temperature, 1), 1)

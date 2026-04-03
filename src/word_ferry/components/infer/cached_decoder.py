@@ -1,4 +1,5 @@
 import copy
+from typing import Optional
 
 from torch import Tensor
 from torch.nn import ModuleList, Module
@@ -22,16 +23,20 @@ class CachedDecoder(Module):
             decoder_in_valid_mask: Tensor,
             memory: Tensor,
             memory_valid_mask: Tensor,
-    ) -> Tensor:
+            caches: list[Optional[tuple[Tensor, Tensor, Tensor, Tensor]]],
+    ) -> tuple[Tensor, list[tuple[Tensor, Tensor, Tensor, Tensor]]]:
         output = decoder_in
 
-        for layer in self.layers:
-            output = layer(
+        for idx, layer in enumerate(self.layers):
+            output, layer_cache = layer(
                 output,
                 decoder_in_causal_mask,
                 decoder_in_valid_mask,
                 memory,
                 memory_valid_mask,
+                caches[idx],
             )
+            caches[idx] = layer_cache
 
-        return output
+        caches: list[tuple[Tensor, Tensor, Tensor, Tensor]]
+        return output, caches

@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Optional
 
 import torch.nn.functional as F
 from torch import nn, Tensor
@@ -52,22 +52,44 @@ class CachedDecoderLayer(nn.Module):
             decoder_in_valid_mask: Tensor,
             memory: Tensor,
             memory_valid_mask: Tensor,
-    ) -> Tensor:
+            cache: Optional[tuple[Tensor, Tensor, Tensor, Tensor]],
+    ) -> tuple[Tensor, tuple[Tensor, Tensor, Tensor, Tensor]]:
         x = decoder_in
 
-        x = x + self._self_attn_block(self.norm1(x), decoder_in_causal_mask, decoder_in_valid_mask)
-        x = x + self._cross_attn_block(self.norm2(x), memory, memory_valid_mask)
+        if cache is not None:
+            self_k, self_v, cross_k, cross_v = cache
+        else:
+            self_k = self_v = cross_k = cross_v = None
+
+        attn_block = self._self_attn_block(self.norm1(x), decoder_in_causal_mask, decoder_in_valid_mask, (self_k, self_v))
+        x = x + attn_block[0]
+
+        cross_attn_block = self._cross_attn_block(self.norm2(x), memory, memory_valid_mask, (cross_k, cross_v))
+        x = x + cross_attn_block[0]
+
         x = x + self._feed_forward_block(self.norm3(x))
 
-        return x
+        return x, (attn_block[1][0], attn_block[1][1], cross_attn_block[1][0], cross_attn_block[1][1])
 
-    def _self_attn_block(self, x: Tensor, decoder_in_causal_mask: Tensor, decoder_in_valid_mask: Tensor) -> Tensor:
-        x = self.self_attn(x, x, decoder_in_causal_mask, decoder_in_valid_mask)[0]
-        return self.dropout1(x)
+    def _self_attn_block(
+            self,
+            x: Tensor,
+            decoder_in_causal_mask: Tensor,
+            decoder_in_valid_mask: Tensor,
+            cache: tuple[Optional[Tensor], Optional[Tensor]],
+    ) -> tuple[Tensor, tuple[Tensor, Tensor]]:
+        x, block_cache = self.self_attn(True, x, x, decoder_in_causal_mask, decoder_in_valid_mask, cache)
+        return self.dropout1(x), block_cache
 
-    def _cross_attn_block(self, x: Tensor, memory: Tensor, memory_valid_mask: Tensor) -> Tensor:
-        x = self.multihead_attn(x, memory, None, memory_valid_mask)[0]
-        return self.dropout2(x)
+    def _cross_attn_block(
+            self,
+            x: Tensor,
+            memory: Tensor,
+            memory_valid_mask: Tensor,
+            cache: tuple[Optional[Tensor], Optional[Tensor]],
+    ) -> tuple[Tensor, tuple[Tensor, Tensor]]:
+        x, block_cache = self.multihead_attn(False, x, memory, None, memory_valid_mask, cache)
+        return self.dropout2(x), block_cache
 
     def _feed_forward_block(self, x: Tensor) -> Tensor:
         x = self.linear2(self.dropout(self.activation(self.linear1(x))))
