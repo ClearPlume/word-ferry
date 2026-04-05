@@ -79,7 +79,7 @@ def main(name: str):
     model.eval()
 
     print("=" * 60)
-    print("? 加载模型")
+    print("🔄 加载模型")
     print(f"    Checkpoint: {name}")
     print(f"    模型架构: {config.arch_str}")
     print(f"    训练参数: {config.train_str}")
